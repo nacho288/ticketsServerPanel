@@ -1,0 +1,11 @@
+ 
+  0: por aprobar,
+  1: aprobado,
+  2: en proceso,
+  3: finalizado,
+  4: rechazado
+  
+
+  1: usuario
+  2: admin
+  
