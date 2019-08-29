@@ -65,7 +65,6 @@ class PedidoController extends Controller
         $aprobado= true;
 
         $tratos = Trato::where('usuario_id', '=', $request->usuario_id)->get();
-        $key = null;
         
         foreach ($request->productos as $item) {
 
@@ -76,7 +75,7 @@ class PedidoController extends Controller
             $minimo = $producto->minimo;
             $maximo = $producto->maximo;
 
-            if ($tratos[$key]) {
+            if (FALSE !== $key) {
                 $minimo = $tratos[$key]->minimo;
                 $maximo = $tratos[$key]->maximo;
             }
