@@ -35,7 +35,13 @@ class UsuarioController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        try {
+            Usuario::create($request->all());
+        } catch (Exception $e) {
+            return ["error" => true];
+        }
+
+        return Usuario::all();
     }
 
     /**
