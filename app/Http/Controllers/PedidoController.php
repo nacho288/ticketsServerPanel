@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Pedido;
 use App\Producto;
+use App\Movimiento;
 use App\Usuario;
 use App\Trato;
 
@@ -108,7 +109,9 @@ class PedidoController extends Controller
                 "nombre" => $producto->nombre,
                 "cantidad" => $producto->pivot->cantidad,
                 "minimo" => $producto->minimo,
-                "minimo" => $producto->minimo,
+                "maximo" => $producto->maximo,
+                "stock" => $producto->stock,
+                "alerta" => $producto->alerta,
             ];
 
             array_push($pro_pack, $values);
@@ -121,6 +124,7 @@ class PedidoController extends Controller
             "pedido_id" => $pedido->id,
             "estado" => $pedido->estado,
             "usuario_nombre" => $pedido->usuario->nombre,
+            "usuario_id" => $pedido->usuario->id,
             "aprobado_por" => $aprovadoPor,
             "comentario_usuario" => $pedido->comentario_usuario,
             "comentario_administrador" => $pedido->comentario_administrador,
@@ -142,6 +146,46 @@ class PedidoController extends Controller
      */
     public function update(Request $request, Pedido $pedido)
     {
+        if ($request->estado == 2) {
+
+            $posible = true;
+
+            foreach ($pedido->productos as $producto) {
+                if ($producto->pivot->cantidad > $producto->stock) {
+                    $posible = false;
+                }
+            }
+
+            if ($posible) {
+                foreach ($pedido->productos as $pro) {
+
+                    $producto = Producto::findOrFail($pro->id);
+
+                    $cantidad = $pro->pivot->cantidad;
+                    $original = $producto->stock;
+                    $nuevo = $original - $cantidad;
+                    $producto->stock = $nuevo;
+                    $producto->save();
+
+                    Movimiento::create(
+                        [
+                            'usuario_id' => $pedido->usuario->id,
+                            'producto_id' => $producto->id,
+                            'original' => $original,
+                            'nuevo' => $nuevo,
+                            'fecha' => date('Y-m-d H:i:s'),
+                            'tipo_id' => "2",
+                        ]
+                    );
+
+                    $pedido->estado = $request->estado;
+                    $pedido->save();
+                }
+            }
+
+            return ["sucess" => $posible];
+        }
+
         try {
 
             $pedido->estado = $request->estado;
@@ -157,7 +201,7 @@ class PedidoController extends Controller
             return ["error" => true];
         }
 
-        return ["sucess" => true];;
+        return ["sucess" => true];
     }
 
     /**

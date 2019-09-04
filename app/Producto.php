@@ -10,12 +10,19 @@ class Producto extends Model
         'nombre',
         'codigo',
         'minimo',
-        'maximo'
+        'maximo',
+        'stock',
+        'alerta'
     ];
 
     public function tratos()
     {
         return $this->hasMany(Trato::class);
+    }
+
+    public function movimientos()
+    {
+        return $this->hasMany(Movimiento::class);
     }
 
 }

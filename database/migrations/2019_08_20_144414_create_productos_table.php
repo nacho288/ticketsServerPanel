@@ -19,6 +19,8 @@ class CreateProductosTable extends Migration
             $table->string('codigo')->unique();
             $table->bigInteger('minimo')->nullable();
             $table->bigInteger('maximo')->nullable();
+            $table->bigInteger('stock')->nullable();
+            $table->bigInteger('alerta')->nullable();
             $table->timestamps();
         });
     }

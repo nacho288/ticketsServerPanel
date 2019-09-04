@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Producto;
+use App\Movimiento;
 use Illuminate\Http\Request;
 use Exception;
 
@@ -34,8 +35,27 @@ class ProductoController extends Controller
     public function store(Request $request)
     {
 
+        if (!$request->has('stock')) {
+            $request->stock = 0;
+        }
+
         try {
-            Producto::create($request->all());
+            $producto = Producto::create($request->all());
+        } catch (Exception $e) {
+            return ["error" => true];
+        }
+
+        try {
+            Movimiento::create(
+                [
+                    'usuario_id' => $request->usuario_id,
+                    'producto_id' => $producto->id,
+                    'original' => $request->stock,
+                    'nuevo' => $request->stock,
+                    'fecha' => date('Y-m-d H:i:s'),
+                    'tipo_id' => "0",
+                ]
+            );
         } catch (Exception $e) {
             return ["error" => true];
         }
@@ -51,7 +71,7 @@ class ProductoController extends Controller
      */
     public function show(Producto $producto)
     {
-        return $producto->load('tratos');
+        return $producto->load('tratos', 'movimientos');
     }
 
     /**
@@ -63,6 +83,20 @@ class ProductoController extends Controller
      */
     public function update(Request $request, Producto $producto)
     {
+        if ($request->has('stock')) {
+            if ($request->stock != $producto->stock) {
+                Movimiento::create(
+                    [
+                        'usuario_id' => $request->usuario_id,
+                        'producto_id' => $producto->id,
+                        'original' => $producto->stock,
+                        'nuevo' => $request->stock,
+                        'fecha' => date('Y-m-d H:i:s'),
+                        'tipo_id' => "1",
+                    ]);
+            }
+        }
+
         try {
             $producto
                 ->fill($request->all())
