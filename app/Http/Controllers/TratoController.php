@@ -43,7 +43,7 @@ class TratoController extends Controller
             return ["error" => true];
         }
 
-        return Producto::all();
+        return Producto::with('subcategoria.categoria')->get();
 
     }
 
@@ -94,6 +94,6 @@ class TratoController extends Controller
         } catch (Exception $e) {
             return ["error" => true];
         }
-        return Producto::all();
+        return Producto::with('subcategoria.categoria')->get();
     }
 }
