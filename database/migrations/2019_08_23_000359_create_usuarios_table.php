@@ -21,6 +21,24 @@ class CreateUsuariosTable extends Migration
             $table->integer('tipo');
             $table->timestamps();
         });
+
+        DB::table('usuarios')->insert(
+            array(
+                'nombre' => 'User',
+                'nombre_usuario' => 'user',
+                'contrasena' => '123',
+                'tipo' => 0
+            )
+        );
+
+        DB::table('usuarios')->insert(
+            array(
+                'nombre' => 'Admin',
+                'nombre_usuario' => 'admin',
+                'contrasena' => '123',
+                'tipo' => 1
+            )
+        );
     }
 
     /**

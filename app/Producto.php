@@ -12,7 +12,8 @@ class Producto extends Model
         'minimo',
         'maximo',
         'stock',
-        'alerta'
+        'alerta',
+        'subcategoria_id'
     ];
 
     public function tratos()
@@ -23,6 +24,11 @@ class Producto extends Model
     public function movimientos()
     {
         return $this->hasMany(Movimiento::class);
+    }
+
+    public function subcategoria()
+    {
+        return $this->hasOne(Subcategoria::class, 'id', 'subcategoria_id');
     }
 
 }

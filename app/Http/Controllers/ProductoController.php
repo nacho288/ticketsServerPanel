@@ -16,7 +16,7 @@ class ProductoController extends Controller
      */
     public function index()
     {
-        $productos = Producto::all();
+        $productos = Producto::with('subcategoria.categoria')->get();;
 
         if ($productos) {
             return $productos;
@@ -60,7 +60,7 @@ class ProductoController extends Controller
             return ["error" => true];
         }
 
-        return Producto::all();
+        return Producto::with('subcategoria.categoria')->get();
     }
 
     /**
@@ -71,7 +71,7 @@ class ProductoController extends Controller
      */
     public function show(Producto $producto)
     {
-        return $producto->load('tratos', 'movimientos');
+        return $producto->load('tratos', 'movimientos', 'subcategoria.categoria');
     }
 
     /**
@@ -105,7 +105,7 @@ class ProductoController extends Controller
             return ["error" => true];
         }
 
-        return Producto::all();
+        return Producto::with('subcategoria.categoria')->get();
     }
 
     /**

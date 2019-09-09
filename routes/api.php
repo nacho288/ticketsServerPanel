@@ -23,6 +23,9 @@ Route::group(['middleware' => 'cors'], function () {
     Route::apiResource('productos', 'ProductoController');
     Route::apiResource('pedidos', 'PedidoController');
     Route::apiResource('tratos', 'TratoController');
+    Route::apiResource('categorias', 'CategoriaController');
+    Route::apiResource('subcategorias', 'SubcategoriaController');
+
     Route::post('/conectar', 'ConectarController@conectar');
     Route::get('/uproductos', 'ProductoUsuarioController@productos');
 });
