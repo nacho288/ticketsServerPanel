@@ -14,7 +14,16 @@ class MovimientoController extends Controller
      */
     public function index()
     {
-        //
+        Movimiento::create(
+            [
+                'user_id' => 1,
+                'producto_id' => 1,
+                'original' => 2,
+                'nuevo' => 22,
+                'fecha' => date('Y-m-d H:i:s'),
+                'tipo' => "1",
+            ]
+        );
     }
 
     /**

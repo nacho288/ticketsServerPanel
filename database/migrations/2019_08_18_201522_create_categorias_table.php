@@ -16,14 +16,12 @@ class CreateCategoriasTable extends Migration
         Schema::create('categorias', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('nombre');
+            $table->bigInteger('almacene_id')->unsigned();
             $table->timestamps();
+
+            $table->foreign('almacene_id')->references('id')->on('almacenes');
         });
 
-        DB::table('categorias')->insert(
-            array(
-                'nombre' => 'Sin asignar',
-            )
-        );
     }
 
     /**

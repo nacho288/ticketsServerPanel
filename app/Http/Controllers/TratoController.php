@@ -37,13 +37,25 @@ class TratoController extends Controller
      */
     public function store(Request $request)
     {
-        try {
-            Trato::create($request->all());
-        } catch (Exception $e) {
-            return ["error" => true];
+
+        if (
+            $request->user()->type == 1 &&
+            $request->user()->almacenes()->where('almacene_id', $request->almacene_id)->exists()
+        ) {
+
+            try {
+                Trato::create($request->all());
+            } catch (Exception $e) {
+                return ["error" => true];
+            }
+
+            return Producto::where('almacene_id', $request->almacene_id)
+                            ->with('subcategoria.categoria')
+                            ->get();
+            
         }
 
-        return Producto::with('subcategoria.categoria')->get();
+        return ["error" => true];
 
     }
 
@@ -87,13 +99,24 @@ class TratoController extends Controller
      * @param  \App\Trato  $trato
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Trato $trato)
+    public function destroy(Request $request ,Trato $trato)
     {
-        try {
-            $trato->delete();
-        } catch (Exception $e) {
-            return ["error" => true];
+        if (
+            $request->user()->type == 1 &&
+            $request->user()->almacenes()->where('almacene_id', $request->almacene_id)->exists()
+        ) {
+
+            try {
+                $trato->delete();
+            } catch (Exception $e) {
+                return ["error" => true];
+            }
+
+            return Producto::where('almacene_id', $request->almacene_id)
+                ->with('subcategoria.categoria')
+                ->get();
         }
-        return Producto::with('subcategoria.categoria')->get();
+
+        return ["error" => true];
     }
 }

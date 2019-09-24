@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Almacene;
 use App\Categoria;
 use Illuminate\Http\Request;
 
@@ -12,19 +13,31 @@ class CategoriaController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Categoria::with('subcategorias')->get();;
-    }
+        if (
+            $request->user()->type == 1 &&
+            $request->user()->almacenes()->where('almacene_id', $request->almacene_id)->exists()
+        ){
+            return Categoria::where('almacene_id', $request->almacene_id)->with('subcategorias')->get();   
+        }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
+        if (
+            $request->user()->type == 0 &&
+            $request->user()->oficinas->where('oficina_id', $request->oficina_id)->first()->exists() &&
+            Almacene::find(['id' => $request->almacene_id])
+                            ->first()
+                            ->oficinas
+                            ->where('oficina_id', $request->oficina_id)
+                            ->first()
+                            ->exists() 
+        ) {
+            return Categoria::where('almacene_id', $request->almacene_id)->with('subcategorias')->get();   
+        }
+
+        
+        return ["error" => true];
+       
     }
 
     /**
@@ -35,38 +48,24 @@ class CategoriaController extends Controller
      */
     public function store(Request $request)
     {
-        try {
-            Categoria::create(
-                [
-                    'nombre' => $request->nombre
-                ]
-            );
-        } catch (Exception $e) {
-            return ["error" => true];
-        }
-        return ["error" => false];
-    }
+        if (
+            $request->user()->type == 1 &&
+            $request->user()->almacenes()->where('almacene_id', $request->almacene_id)->exists()
+        ){
+            try {
+                Categoria::create(
+                    [
+                        'nombre' => $request->nombre,
+                        'almacene_id' => $request->almacene_id,
+                    ]
+                );
+            } catch (Exception $e) {
+                return ["error" => true];
+            }
+            return ["error" => false];    
+        } 
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Categoria  $categoria
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Categoria $categoria)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Categoria  $categoria
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Categoria $categoria)
-    {
-        //
+        return ["error" => true];
     }
 
     /**

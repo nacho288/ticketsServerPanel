@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Usuario;
+use App\User;
 use Illuminate\Http\Request;
 
 class UsuarioController extends Controller
@@ -12,9 +13,26 @@ class UsuarioController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        return Usuario::all();
+
+        if ($request->user()->type == 9) {
+            
+            $type = $request->query('type', 99);
+
+            if ($type == '0') {
+                return User::where('type', 0)->get();
+            }
+
+            if ($type == '1') {
+                return User::where('type', 1)->get();
+            }
+
+            if ($type == '99') {
+                return User::all();
+            }
+        }
+
     }
 
     /**
@@ -35,13 +53,7 @@ class UsuarioController extends Controller
      */
     public function store(Request $request)
     {
-        try {
-            Usuario::create($request->all());
-        } catch (Exception $e) {
-            return ["error" => true];
-        }
 
-        return Usuario::all();
     }
 
     /**

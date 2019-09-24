@@ -15,15 +15,17 @@ class CreateMovimientosTable extends Migration
     {
         Schema::create('movimientos', function (Blueprint $table) {
             $table->bigIncrements('id');
-            $table->bigInteger('usuario_id')->unsigned()->nullable();
+            $table->bigInteger('user_id')->unsigned()->nullable();
+            $table->bigInteger('oficina_id')->unsigned()->nullable();
             $table->bigInteger('producto_id')->unsigned();
             $table->bigInteger('original')->nullable();
             $table->bigInteger('nuevo');
             $table->date('fecha');
-            $table->bigInteger('tipo_id');
+            $table->bigInteger('tipo');
             
             $table->foreign('producto_id')->references('id')->on('productos');
-            $table->foreign('usuario_id')->references('id')->on('usuarios');
+            $table->foreign('user_id')->references('id')->on('users');
+            $table->foreign('oficina_id')->references('id')->on('oficinas');
 
             $table->timestamps();
         });

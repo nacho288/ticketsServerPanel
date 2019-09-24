@@ -7,12 +7,13 @@ use App\Producto;
 use App\Movimiento;
 use App\Usuario;
 use App\Trato;
-
+use App\Traits\CanAccess;
 
 use Illuminate\Http\Request;
 
 class PedidoController extends Controller
 {
+    use CanAccess;
     /**
      * Display a listing of the resource.
      *
@@ -20,31 +21,60 @@ class PedidoController extends Controller
      */
     public function index(Request $request)
     {
-        
-        $usuario_id = $request->usuario_id;
-        $usuario = Usuario::findOrFail($usuario_id);
 
-        $pedidos = $usuario->tipo != 0 ? $pedido = Pedido::all() : Pedido::where('usuario_id', '=', $usuario_id)->get();;
+        if ($this->CanUserOficina($request->user(), $request->oficina_id)) {
 
-        $pack = [];
+            $pedidos = Pedido::where([['oficina_id', '=', $request->oficina_id]])->get();
 
-        foreach ($pedidos as $pedido) {
+            $pack = [];
 
-            $aprovadoPor = $pedido->aprovadoPor ? $pedido->aprovadoPor->nombre : "";
+            foreach ($pedidos as $pedido) {
 
-            $values = [
-                "pedido_id" => $pedido->id,
-                "usuario" => $pedido->usuario->nombre,
-                "aprovadoPor" => $aprovadoPor,
-                "estado" => $pedido->estado,
-                "fecha" => $pedido->fecha,
-            ];
+                $evaluado_por = $pedido->evaluador ? $pedido->evaluador->name : "";
 
-            array_push($pack, $values);
+                $values = [
+                    "pedido_id" => $pedido->id,
+                    "user" => $pedido->user->name,
+                    "evaluado_por" => $evaluado_por,
+                    "estado" => $pedido->estado,
+                    "fecha" => $pedido->fecha,
+                    "almacen" => $pedido->almacene->nombre
+                ];
+
+                array_push($pack, $values);
+            }
+
+            return $pack;
+
         }
 
-        return $pack;
+        if ($this->CanAdminAlmacen($request->user(), $request->almacene_id)) {
 
+            $pedidos = Pedido::where([['almacene_id', '=', $request->almacene_id]])->get();
+
+            $pack = [];
+
+            foreach ($pedidos as $pedido) {
+
+                $evaluado_por = $pedido->evaluador ? $pedido->evaluador->name : "";
+
+                $values = [
+                    "pedido_id" => $pedido->id,
+                    "user" => $pedido->user->name,
+                    "evaluado_por" => $evaluado_por,
+                    "estado" => $pedido->estado,
+                    "fecha" => $pedido->fecha,
+                    "almacen" => $pedido->almacene->nombre,
+                    "oficina" => $pedido->oficina->nombre
+                ];
+
+                array_push($pack, $values);
+            }
+
+            return $pack;
+        }
+
+        return ["error" => true];
     }
 
 
@@ -56,84 +86,168 @@ class PedidoController extends Controller
      */
     public function store(Request $request)
     {
-        $pedido = new Pedido();
-        $pedido->usuario_id = $request->usuario_id;
-        $pedido->comentario_usuario = $request->comentario_usuario;
-        $pedido->fecha =  date('Y-m-d H:i:s');
-        $pedido->estado = 0;
-        $pedido->save();
 
-        $aprobado= true;
+        if ($this->CanUserAlmacen($request->user(), $request->oficina_id, $request->almacene_id)) {
+           
+            $pedido = new Pedido();
+            $pedido->user_id = $request->user()->id;
+            $pedido->almacene_id = $request->almacene_id;
+            $pedido->oficina_id = $request->oficina_id;
+            $pedido->comentario_usuario = $request->comentario_usuario;
+            $pedido->fecha = date('Y-m-d H:i:s');
+            $pedido->estado = 0;
+            $pedido->save();
 
-        $tratos = Trato::where('usuario_id', '=', $request->usuario_id)->get();
-        
-        foreach ($request->productos as $item) {
+            $aprobado= true;
 
-            $producto = Producto::findOrFail($item['producto_id']);
+            $tratos = Trato::where('oficina_id', '=', $request->oficina_id)->get();
+            
+            foreach ($request->productos as $item) {
 
-            $key = array_search($producto->id, array_column($tratos->toArray(), 'producto_id'));   
+                $producto = Producto::findOrFail($item['producto_id']);
 
-            $minimo = $producto->minimo;
-            $maximo = $producto->maximo;
+                $key = array_search($producto->id, array_column($tratos->toArray(), 'producto_id'));   
 
-            if (FALSE !== $key) {
-                $minimo = $tratos[$key]->minimo;
-                $maximo = $tratos[$key]->maximo;
+                $minimo = $producto->minimo;
+                $maximo = $producto->maximo;
+
+                if (FALSE !== $key) {
+                    $minimo = $tratos[$key]->minimo;
+                    $maximo = $tratos[$key]->maximo;
+                }
+
+                $cantidad_actual = Pedido::where([['almacene_id', '=', $request->almacene_id], ['oficina_id', '=', $request->oficina_id], ['estado', '!=', 4]])
+                    ->whereYear('fecha', '=', date('Y'))
+                    ->whereMonth('fecha', '=', date('m'))
+                    ->with('productos')
+                    ->get()
+                    ->pluck('productos')
+                    ->flatten()
+                    ->where('id', $producto->id)
+                    ->where('pivot.estado', '!=', 2)
+                    ->sum('pivot.cantidad');
+
+                if ($minimo > $item['cantidad'] || $maximo < ($item['cantidad'] + $cantidad_actual)) {
+                    $aprobado = false;
+                }
+
             }
 
-            if ($minimo > $item['cantidad'] || $maximo < $item['cantidad']) {
-                $aprobado = false;
+            $estadoProducto = $aprobado ? 1 : 0;
+
+            foreach ($request->productos as $item) {
+                $pedido->productos()->attach($item['producto_id'], ['cantidad' => $item['cantidad'], 'estado' => $estadoProducto]);
             }
 
-            $pedido->productos()->attach($item['producto_id'], ['cantidad' => $item['cantidad']]);
+            $pedido->estado = $aprobado ? 1 : 0;
+            $pedido->save();
+
+            return ["aprobado" => $aprobado]; 
+
         }
 
-        $pedido->estado = $aprobado ? 1 : 0;
-        $pedido->save();
-
-        return ["aprobado" => $aprobado];
-
+        return ["error" => true];
 
     }
     
-    public function show(Pedido $pedido)
-    
+    public function show(Request $request, Pedido $pedido)
     {
-        $pro_pack = [];
 
-        foreach ($pedido->productos as $producto) {
+        if ($this->CanUserOficina($request->user(), $request->oficina_id)) {
 
-            $values = [
-                "producto_id" => $producto->pivot->producto_id,
-                "codigo" => $producto->codigo,
-                "nombre" => $producto->nombre,
-                "cantidad" => $producto->pivot->cantidad,
-                "minimo" => $producto->minimo,
-                "maximo" => $producto->maximo,
-                "stock" => $producto->stock,
-                "alerta" => $producto->alerta,
+            if ($pedido->oficina_id != $request->oficina_id) {
+                return ["error" => true];
+            }
+
+            $pro_pack = [];
+
+            foreach ($pedido->productos as $producto) {
+
+                $values = [
+                    "producto_id" => $producto->pivot->producto_id,
+                    "codigo" => $producto->codigo,
+                    "nombre" => $producto->nombre,
+                    "cantidad" => $producto->pivot->cantidad,
+                    "estado" => $producto->pivot->estado,
+                    "stock" => $producto->stock,
+                    "alerta" => $producto->alerta,
+                ];
+
+                array_push($pro_pack, $values);
+
+            }
+
+            $evaluado_por = $pedido->evaluador ? $pedido->evaluador->name : "";
+
+            $output = [
+                "pedido_id" => $pedido->id,
+                "estado" => $pedido->estado,
+                "user" => $pedido->user->name,
+                "user_id" => $pedido->user->id,
+                "oficina_id" => $pedido->oficina_id,
+                "oficina" => $pedido->oficina->nombre,
+                "almacen" => $pedido->almacene->nombre,
+                "almacene_id" => $pedido->almacene_id, 
+                "evaluado_por" => $evaluado_por,
+                "comentario_usuario" => $pedido->comentario_usuario,
+                "comentario_administrador" => $pedido->comentario_administrador,
+                "fecha" => $pedido->fecha,
+                "productos" => $pro_pack
             ];
 
-            array_push($pro_pack, $values);
+            return $output;
 
         }
 
-        $aprovadoPor = $pedido->aprovadoPor ? $pedido->aprovadoPor->nombre : "";
+        if ($this->CanAdminAlmacen($request->user(), $request->almacene_id)) {
 
-        $output = [
-            "pedido_id" => $pedido->id,
-            "estado" => $pedido->estado,
-            "usuario_nombre" => $pedido->usuario->nombre,
-            "usuario_id" => $pedido->usuario->id,
-            "aprobado_por" => $aprovadoPor,
-            "comentario_usuario" => $pedido->comentario_usuario,
-            "comentario_administrador" => $pedido->comentario_administrador,
-            "fecha" => $pedido->fecha,
-            "productos" => $pro_pack
-        ];
+            if ($pedido->almacene_id != $request->almacene_id) {
+                return ["error" => true];
+            }
 
+            $pro_pack = [];
 
-        return $output;
+            foreach ($pedido->productos as $producto) {
+
+                $values = [
+                    "producto_id" => $producto->pivot->producto_id,
+                    "codigo" => $producto->codigo,
+                    "nombre" => $producto->nombre,
+                    "cantidad" => $producto->pivot->cantidad,
+                    "estado" => $producto->pivot->estado,
+                    "minimo" => $producto->minimo,
+                    "maximo" => $producto->maximo,
+                    "stock" => $producto->stock,
+                    "alerta" => $producto->alerta,
+                ];
+
+                array_push($pro_pack, $values);
+            }
+
+            $evaluado_por = $pedido->evaluador ? $pedido->evaluador->name : "";
+
+            $output = [
+                "pedido_id" => $pedido->id,
+                "estado" => $pedido->estado,
+                "user" => $pedido->user->name,
+                "user_id" => $pedido->user->id,
+                "oficina_id" => $pedido->oficina_id,
+                "oficina" => $pedido->oficina->nombre,
+                "almacen" => $pedido->almacene->nombre,
+                "almacene_id" => $pedido->almacene_id,
+                "evaluado_por" => $evaluado_por,
+                "comentario_usuario" => $pedido->comentario_usuario,
+                "comentario_administrador" => $pedido->comentario_administrador,
+                "fecha" => $pedido->fecha,
+                "productos" => $pro_pack
+            ];
+
+            return $output;
+
+        }
+
+        return ["error" => true];
+
     }
 
 
@@ -146,62 +260,136 @@ class PedidoController extends Controller
      */
     public function update(Request $request, Pedido $pedido)
     {
-        if ($request->estado == 2) {
 
-            $posible = true;
+        if ($this->CanUserOficina($request->user(), $request->oficina_id)) {
 
-            foreach ($pedido->productos as $producto) {
-                if ($producto->pivot->cantidad > $producto->stock) {
-                    $posible = false;
+            if ($request->estado == 4 && $request->oficina_id == $pedido->oficina_id) {
+                try {
+                    $pedido->estado = $request->estado;
+                    $pedido->evaluado_por = $request->user()->id;
+                    foreach ($pedido->productos as $item) {
+                        $pedido->productos()->updateExistingPivot($item->id, ['estado' => 2]);
+                    }
+                    $pedido->save();
+                } catch (Exception $e) {
+                    return ["error" => true];
                 }
+                return ["error" => false];
             }
+            
+        }
 
-            if ($posible) {
-                foreach ($pedido->productos as $pro) {
+        if ($this->CanAdminAlmacen($request->user(), $request->almacene_id)) {
 
-                    $producto = Producto::findOrFail($pro->id);
-
-                    $cantidad = $pro->pivot->cantidad;
-                    $original = $producto->stock;
-                    $nuevo = $original - $cantidad;
-                    $producto->stock = $nuevo;
-                    $producto->save();
-
-                    Movimiento::create(
-                        [
-                            'usuario_id' => $pedido->usuario->id,
-                            'producto_id' => $producto->id,
-                            'original' => $original,
-                            'nuevo' => $nuevo,
-                            'fecha' => date('Y-m-d H:i:s'),
-                            'tipo_id' => "2",
-                        ]
-                    );
-
+            if ($request->estado == 3 && $request->almacene_id == $pedido->almacene_id) {
+                try {
                     $pedido->estado = $request->estado;
                     $pedido->save();
+                } catch (Exception $e) {
+                    return ["error" => true];
                 }
+                return ["error" => false];
             }
 
-            return ["sucess" => $posible];
-        }
-
-        try {
-
-            $pedido->estado = $request->estado;
-            
-            if ($request->estado == 1 || $request->estado == 4) {
-                $pedido->comentario_administrador = $request->comentario_administrador ?? "";
-                $pedido->aprovado_por = $request->aprovado_por;
+            if ($request->estado == 4 && $request->almacene_id == $pedido->almacene_id) {
+                try {
+                    $pedido->estado = $request->estado;
+                    $pedido->evaluado_por = $request->user()->id;
+                    foreach ($pedido->productos as $item) {
+                        $pedido->productos()->updateExistingPivot($item->id, ['estado' => 2]);
+                    }
+                    $pedido->comentario_administrador = $request->comentario_administrador; 
+                    $pedido->save();
+                } catch (Exception $e) {
+                    return ["error" => true];
+                }
+                return ["error" => false];
             }
-            
-            $pedido->save();
 
-        } catch (Exception $e) {
-            return ["error" => true];
+            if ($request->estado == 2 && $request->almacene_id == $pedido->almacene_id) {
+
+                $posible = true;
+
+                $productos = $pedido->productos->where('pivot.estado', 1);
+
+                foreach ($productos as $producto) {
+                    if ($producto->pivot->cantidad > $producto->stock) {
+                        $posible = false;
+                    }
+                }
+
+                if ($posible) {
+                    try {
+                        
+                       foreach ($productos as $pro) {
+
+                        $producto = Producto::findOrFail($pro->id);
+
+                        $cantidad = $pro->pivot->cantidad;
+                        $original = $producto->stock;
+                        $nuevo = $original - $cantidad;
+                        $producto->stock = $nuevo;
+                        $producto->save();
+
+                        Movimiento::create(
+                            [
+                                'oficina_id' => $pedido->oficina_id,
+                                'producto_id' => $producto->id,
+                                'original' => $original,
+                                'nuevo' => $nuevo,
+                                'fecha' => date('Y-m-d H:i:s'),
+                                'tipo' => "2",
+                            ]
+                        );
+
+                        }
+
+                        $pedido->estado = $request->estado;
+                        $pedido->save(); 
+
+                    } catch (Exception $e) {
+                        return ["error" => 'true'];
+                    }
+                }
+
+                return ["sucess" => $posible, "error" => false];
+
+            }
+
+            if ($request->estado == 1 && $request->almacene_id == $pedido->almacene_id) {
+
+                $estadoPedido = 1;
+
+                try {
+                    
+                   foreach ($request->pack_aprobado as $item) {
+
+                        if (!$item['aprobado']) {
+                            $estadoPedido = 5;
+                        }
+                        $itemEstado = $item['aprobado'] ? 1 : 2;
+
+                        $pedido->productos()->updateExistingPivot($item['producto_id'], ['estado' => $itemEstado]);
+                    } 
+
+                } catch (Exception $e) {
+                    return ["error" => true];
+                }
+
+                try {
+                    $pedido->estado = $estadoPedido;
+                    $pedido->evaluado_por = $request->user()->id;
+                    $pedido->save();
+                } catch (Exception $e) {
+                    return ["error" => true];
+                }
+
+                return ["error" => false];
+            }
+
         }
 
-        return ["sucess" => true];
+        return ["error" => true];
     }
 
     /**

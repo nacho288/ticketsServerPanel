@@ -17,18 +17,11 @@ class CreateSubcategoriasTable extends Migration
             $table->bigIncrements('id');
             $table->string('nombre');
             $table->bigInteger('categoria_id')->unsigned();
+            $table->timestamps();
 
             $table->foreign('categoria_id')->references('id')->on('categorias');
-
-            $table->timestamps();
         });
 
-        DB::table('subcategorias')->insert(
-            array(
-                'nombre' => 'Sin asignar',
-                'categoria_id' => '1',
-            )
-        );
     }
 
     /**

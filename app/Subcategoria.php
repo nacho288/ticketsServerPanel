@@ -12,6 +12,9 @@ class Subcategoria extends Model
         'categoria_id'
     ];
 
+    protected $hidden = [
+        'created_at', 'updated_at',
+    ];
 
     public function Categoria()
     {

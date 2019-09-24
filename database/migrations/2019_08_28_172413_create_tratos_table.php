@@ -16,13 +16,13 @@ class CreateTratosTable extends Migration
         Schema::create('tratos', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->bigInteger('producto_id')->unsigned();
-            $table->bigInteger('usuario_id')->unsigned();
+            $table->bigInteger('oficina_id')->unsigned();
             $table->bigInteger('minimo')->nullable();
             $table->bigInteger('maximo')->nullable();
             $table->timestamps();
 
             $table->foreign('producto_id')->references('id')->on('productos');
-            $table->foreign('usuario_id')->references('id')->on('usuarios');
+            $table->foreign('oficina_id')->references('id')->on('oficinas');
         });
     }
 

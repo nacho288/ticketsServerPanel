@@ -1,0 +1,27 @@
+done -  1 - implementar y testear passport
+
+done - 2 - modificar base
+
+3 - implementar login con oficina o almacen
+
+
+
+
+17 - evitar que se manden dos tratos de la misma persona 
+
+18 - mejorar tratos  que no envien productos y modifificar la verificancion 
+sacando el almacen_id del $request
+
+19 - agregar usuariod de la oficina en el registro de movimientos
+
+20 - configuar bien los cors
+
+
+
+Encryption keys generated successfully.
+Personal access client created successfully.
+Client ID: 1
+Client secret: HPYXAmymtNauIPvqHo2QOEqc3CsG31mKC50zpqbq
+Password grant client created successfully.
+Client ID: 2
+Client secret: 1DKbe7ZRUhfZXJMpH0rVfR5q3dIcOXPjLIIHy4sp

@@ -9,3 +9,6 @@
   1: usuario
   2: admin
   
+
+mejorar tratos  que no envien productos y modifificar la verificancion 
+sacando el almacen_id del $request

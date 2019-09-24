@@ -17,11 +17,16 @@ class CreateProductosTable extends Migration
             $table->bigIncrements('id');
             $table->string('nombre');
             $table->string('codigo')->unique();
-            $table->bigInteger('minimo')->nullable();
-            $table->bigInteger('maximo')->nullable();
-            $table->bigInteger('stock')->nullable();
-            $table->bigInteger('alerta')->nullable();
+            $table->bigInteger('subcategoria_id')->unsigned()->nullable();
+            $table->bigInteger('almacene_id')->unsigned();
+            $table->bigInteger('minimo');
+            $table->bigInteger('maximo');
+            $table->bigInteger('stock');
+            $table->bigInteger('alerta');
             $table->timestamps();
+
+            $table->foreign('subcategoria_id')->references('id')->on('subcategorias');
+            $table->foreign('almacene_id')->references('id')->on('almacenes');
         });
     }
 

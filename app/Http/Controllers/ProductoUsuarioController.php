@@ -12,7 +12,7 @@ class ProductoUsuarioController extends Controller
     public function productos(Request $request)
     {
 
-        $tratos = Trato::where('usuario_id', '=', $request->usuario_id)->get();
+        $tratos = Trato::where('user_id', '=', $request->user_id)->get();
 
         $productos = Producto::all();
 

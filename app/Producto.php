@@ -13,7 +13,12 @@ class Producto extends Model
         'maximo',
         'stock',
         'alerta',
-        'subcategoria_id'
+        'subcategoria_id',
+        'almacene_id'
+    ];
+
+    protected $hidden = [
+        'created_at', 'updated_at',
     ];
 
     public function tratos()

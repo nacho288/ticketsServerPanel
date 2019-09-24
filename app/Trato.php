@@ -9,7 +9,7 @@ class Trato extends Model
 
     protected $fillable = [
         'producto_id',
-        'usuario_id',
+        'oficina_id',
         'minimo',
         'maximo'
     ];
@@ -17,7 +17,7 @@ class Trato extends Model
 
     public function usuario()
     {
-        return $this->hasOne('App\Usuario', 'id', 'usuario_id');
+        return $this->hasOne('App\Usuario', 'id', 'oficina_id');
     }
 
 }

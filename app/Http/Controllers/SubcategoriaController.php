@@ -18,16 +18,6 @@ class SubcategoriaController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
      * Store a newly created resource in storage.
      *
      * @param  \Illuminate\Http\Request  $request
@@ -35,35 +25,19 @@ class SubcategoriaController extends Controller
      */
     public function store(Request $request)
     {
-        try {
-            Subcategoria::create($request->all());
-        } catch (Exception $e) {
-            return ["error" => true];
+        if (
+            $request->user()->type == 1 &&
+            $request->user()->almacenes()->where('almacene_id', $request->almacene_id)->exists()
+        ) {
+            try {
+                Subcategoria::create($request->all());
+            } catch (Exception $e) {
+                return ["error" => true];
+            }
+            return ["error" => false];
         }
-        return ["error" => false];
- 
-    }
 
-    /**
-     * Display the specified resource.
-     *
-     * @param  \App\Subcategoria  $subcategoria
-     * @return \Illuminate\Http\Response
-     */
-    public function show(Subcategoria $subcategoria)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Subcategoria  $subcategoria
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Subcategoria $subcategoria)
-    {
-        //
+        return ["error" => true];
     }
 
     /**
@@ -75,14 +49,21 @@ class SubcategoriaController extends Controller
      */
     public function update(Request $request, Subcategoria $subcategoria)
     {
-        try {
-            $subcategoria
-                ->fill($request->all())
-                ->save();
-        } catch (Exception $e) {
-            return ["error" => true];
+        if (
+            $request->user()->type == 1 &&
+            $request->user()->almacenes()->where('almacene_id', $request->almacene_id)->exists()
+        ) {
+            try {
+                $subcategoria
+                    ->fill($request->all())
+                    ->save();
+            } catch (Exception $e) {
+                return ["error" => true];
+            }
+            return ["error" => false];
         }
-        return ["error" => false];
+
+        return ["error" => true];
     }
 
     /**

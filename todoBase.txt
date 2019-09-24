@@ -1,0 +1,51 @@
+Modificaciones base:
+----------------------------------------------------------------------
+
+> Usuarios:
+	-id
+	-nombre
+	-nombre_usuario
+	-tipo
+
+un usuario pertenesee a varias oficinas, tabla de relacion basica
+
+------------------------------------------------------------------------
+
+> Oficinas:
+	-id
+	-nombre	
+
+una oficina puede pedir a varios almacenes, tabla de relacion basica
+
+------------------------------------------------------------------------
+
+> Almacenes:
+	-id
+	-nombre
+
+------------------------------------------------------------------------
+
+> Productos, agregar:
+	-almacen_id
+
+un producto pertenese a un almacen
+
+------------------------------------------------------------------------
+
+> Tabla pedido_producto, agregar :
+	-estado
+
+cada linea del pedido tiene un estado independiente
+
+------------------------------------------------------------------------
+
+> Tabla de tratos, cambiar:
+	-usuario_id por oficina_id
+
+------------------------------------------------------------------------
+
+> Tabla de movimientos, agregar:
+	-oficina_id
+
+------------------------------------------------------------------------
+
