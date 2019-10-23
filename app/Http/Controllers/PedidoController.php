@@ -99,12 +99,17 @@ class PedidoController extends Controller
             $pedido->save();
 
             $aprobado= true;
+            $preparacion = 0;
 
             $tratos = Trato::where('oficina_id', '=', $request->oficina_id)->get();
             
             foreach ($request->productos as $item) {
 
                 $producto = Producto::findOrFail($item['producto_id']);
+
+                if ($producto->preparacion > $preparacion) {
+                    $preparacion = $producto->preparacion;
+                }
 
                 $key = array_search($producto->id, array_column($tratos->toArray(), 'producto_id'));   
 
@@ -116,9 +121,11 @@ class PedidoController extends Controller
                     $maximo = $tratos[$key]->maximo;
                 }
 
+                $fecha_actual = date("d-m-Y");
+                $fecha_anterior = date("d-m-Y", strtotime($fecha_actual . "- " . $producto->frecuencia . " days")); 
+
                 $cantidad_actual = Pedido::where([['almacene_id', '=', $request->almacene_id], ['oficina_id', '=', $request->oficina_id], ['estado', '!=', 4]])
-                    ->whereYear('fecha', '=', date('Y'))
-                    ->whereMonth('fecha', '=', date('m'))
+                    ->whereBetween('fecha', [$fecha_anterior, $fecha_actual])
                     ->with('productos')
                     ->get()
                     ->pluck('productos')
@@ -140,6 +147,7 @@ class PedidoController extends Controller
             }
 
             $pedido->estado = $aprobado ? 1 : 0;
+            $pedido->preparacion = $preparacion;
             $pedido->save();
 
             return ["aprobado" => $aprobado]; 
@@ -178,6 +186,7 @@ class PedidoController extends Controller
             }
 
             $evaluado_por = $pedido->evaluador ? $pedido->evaluador->name : "";
+            $retirado_por = $pedido->retirador ? $pedido->retirador->name : "";
 
             $output = [
                 "pedido_id" => $pedido->id,
@@ -189,10 +198,12 @@ class PedidoController extends Controller
                 "almacen" => $pedido->almacene->nombre,
                 "almacene_id" => $pedido->almacene_id, 
                 "evaluado_por" => $evaluado_por,
+                "retirado_por" => $retirado_por,
+                "preparacion" => $pedido->preparacion,
                 "comentario_usuario" => $pedido->comentario_usuario,
                 "comentario_administrador" => $pedido->comentario_administrador,
                 "fecha" => $pedido->fecha,
-                "productos" => $pro_pack
+                "productos" => $pro_pack,
             ];
 
             return $output;
@@ -225,6 +236,7 @@ class PedidoController extends Controller
             }
 
             $evaluado_por = $pedido->evaluador ? $pedido->evaluador->name : "";
+            $retirado_por = $pedido->retirador ? $pedido->retirador->name : "";
 
             $output = [
                 "pedido_id" => $pedido->id,
@@ -236,6 +248,8 @@ class PedidoController extends Controller
                 "almacen" => $pedido->almacene->nombre,
                 "almacene_id" => $pedido->almacene_id,
                 "evaluado_por" => $evaluado_por,
+                "retirado_por" => $retirado_por,
+                "preparacion" => $pedido->preparacion,
                 "comentario_usuario" => $pedido->comentario_usuario,
                 "comentario_administrador" => $pedido->comentario_administrador,
                 "fecha" => $pedido->fecha,
@@ -276,10 +290,33 @@ class PedidoController extends Controller
                 }
                 return ["error" => false];
             }
+
+            if ($request->estado == 3 && $request->oficina_id == $pedido->oficina_id) {
+                try {
+                    $pedido->estado = $request->estado;
+                    $pedido->retirado_por = $request->user()->id;
+                    $pedido->save();
+                } catch (Exception $e) {
+                    return ["error" => true];
+                }
+                return ["error" => false];
+            }
             
         }
 
         if ($this->CanAdminAlmacen($request->user(), $request->almacene_id)) {
+
+            if ($request->has('preparacion')) {
+                if ($request->preparacion != $pedido->preparacion && $request->almacene_id == $pedido->almacene_id) {
+                    try {
+                        $pedido->preparacion = $request->preparacion;
+                        $pedido->save();
+                    } catch (Exception $e) {
+                        return ["error" => true];
+                    }
+                    return ["error" => false];
+                }
+            }
 
             if ($request->estado == 3 && $request->almacene_id == $pedido->almacene_id) {
                 try {
@@ -367,9 +404,13 @@ class PedidoController extends Controller
                         if (!$item['aprobado']) {
                             $estadoPedido = 5;
                         }
-                        $itemEstado = $item['aprobado'] ? 1 : 2;
 
-                        $pedido->productos()->updateExistingPivot($item['producto_id'], ['estado' => $itemEstado]);
+                        if ($item['aprobado']) {
+                            $pedido->productos()->updateExistingPivot($item['producto_id'], ['estado' => 1, 'cantidad' => $item['cantidad']]);
+                        } else {
+                            $pedido->productos()->updateExistingPivot($item['producto_id'], ['estado' => 2]);
+                        }
+
                     } 
 
                 } catch (Exception $e) {

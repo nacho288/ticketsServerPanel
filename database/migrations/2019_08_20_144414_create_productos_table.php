@@ -16,13 +16,15 @@ class CreateProductosTable extends Migration
         Schema::create('productos', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('nombre');
-            $table->string('codigo')->unique();
+            $table->string('codigo');
             $table->bigInteger('subcategoria_id')->unsigned()->nullable();
             $table->bigInteger('almacene_id')->unsigned();
             $table->bigInteger('minimo');
             $table->bigInteger('maximo');
             $table->bigInteger('stock');
             $table->bigInteger('alerta');
+            $table->bigInteger('frecuencia');
+            $table->bigInteger('preparacion');
             $table->timestamps();
 
             $table->foreign('subcategoria_id')->references('id')->on('subcategorias');

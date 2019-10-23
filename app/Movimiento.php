@@ -13,7 +13,8 @@ class Movimiento extends Model
         'original',
         'nuevo',
         'fecha',
-        'tipo'
+        'tipo',
+        'comentario'
     ];
 
 }

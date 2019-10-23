@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Pedido;
+use App\Categoria;
+use App\Subcategoria;
 use Illuminate\Http\Request;
 use App\Traits\CanAccess;
 
@@ -25,8 +27,14 @@ class TestController extends Controller
             ->where('pivot.estado', '!=', 3)
             ->sum('pivot.cantidad'); */
 
-            return ['respuesta' => $this->CanAdminAlmacen($request->user(), 1)];
 
+            $frecuencia = 20;
+
+        $fecha_actual = date("d-m-Y");
+
+        $fecha_1 = date("d-m-Y", strtotime($fecha_actual . "- " . $frecuencia . " days")); 
+
+            return ['respuesta' =>  $fecha_1 , 'respuesta2' =>  $fecha_actual];
     
     }
 }

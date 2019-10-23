@@ -19,7 +19,7 @@ class CategoriaController extends Controller
             $request->user()->type == 1 &&
             $request->user()->almacenes()->where('almacene_id', $request->almacene_id)->exists()
         ){
-            return Categoria::where('almacene_id', $request->almacene_id)->with('subcategorias')->get();   
+            return Categoria::where('almacene_id', $request->almacene_id)->with('subcategorias')->orderBy('nombre')->get();   
         }
 
         if (
@@ -32,7 +32,8 @@ class CategoriaController extends Controller
                             ->first()
                             ->exists() 
         ) {
-            return Categoria::where('almacene_id', $request->almacene_id)->with('subcategorias')->get();   
+            return Categoria::where('almacene_id', $request->almacene_id)->with('subcategorias')->orderBy('nombre')->get();   
+            
         }
 
         

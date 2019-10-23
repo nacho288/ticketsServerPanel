@@ -22,6 +22,7 @@ class CreateMovimientosTable extends Migration
             $table->bigInteger('nuevo');
             $table->date('fecha');
             $table->bigInteger('tipo');
+            $table->text('comentario')->nullable();
             
             $table->foreign('producto_id')->references('id')->on('productos');
             $table->foreign('user_id')->references('id')->on('users');

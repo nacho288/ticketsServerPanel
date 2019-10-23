@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Almacene;
 use App\Producto;
+use App\Subcategoria;
 use App\Movimiento;
 use App\Oficina;
+use App\Trato;
 use Illuminate\Http\Request;
 use Exception;
 
@@ -43,7 +45,33 @@ class ProductoController extends Controller
             }
 
             if ($almacen->oficinas->where('id', $request->oficina_id)->first()->usuarios->where('id', $request->user()->id)->first()->exists()) {
-                return $almacen->productos;
+
+                
+                function habilitado(Type $item)
+                {
+                    return ($item->maximo > 0);
+                }
+                
+                try {
+                    $productos = $almacen->productos;
+                    $tratos = Trato::where('oficina_id', '=', $request->oficina_id)->get();
+
+                    foreach ($productos as $producto) {
+
+                        $key = array_search($producto->id, array_column($tratos->toArray(), 'producto_id'));
+
+                        if (FALSE !== $key) {
+                            $producto->minimo = $tratos[$key]->minimo;
+                            $producto->maximo = $tratos[$key]->maximo;
+                        }
+                    }
+
+                    return $productos->where('maximo', '>', '0');
+
+                } catch (Exception $e) {
+                    return ["error" => 'true'];
+                }
+
             }
 
             return ["error" => true]; 
@@ -72,8 +100,34 @@ class ProductoController extends Controller
                 $request->stock = 0;
             }
 
+            $cadena = substr(Subcategoria::find($request->subcategoria_id)->categoria->nombre, 0, 1) .
+                      substr(Subcategoria::find($request->subcategoria_id)->nombre, 0, 1) .
+                      substr($request->nombre, 0, 1);
+
+            $numero = 0;
+        
+            while (Producto::where('codigo', $cadena . $numero)->exists()) {
+                $numero++;
+            }
+
+            $codigo = strtoupper($cadena) . $numero;
+
             try {
-                $producto = Producto::create($request->all());
+                $request->codigo = $codigo;
+                $producto = Producto::create(
+                    [
+                        'nombre' => $request->nombre,
+                        'codigo' => $codigo,
+                        'subcategoria_id' => $request->subcategoria_id,
+                        'almacene_id' => $request->almacene_id,
+                        'minimo' => $request->minimo,
+                        'maximo' => $request->maximo,
+                        'stock' => $request->stock,
+                        'alerta' => $request->alerta,
+                        'frecuencia' => $request->frecuencia,
+                        'preparacion' => $request->preparacion,
+                    ]
+                );
             } catch (Exception $e) {
                 return ["error" => true];
             }
@@ -150,6 +204,7 @@ class ProductoController extends Controller
                             'nuevo' => $request->stock,
                             'fecha' => date('Y-m-d H:i:s'),
                             'tipo' => "1",
+                            'comentario' => $request->comentario,
                         ]
                     );
                 }

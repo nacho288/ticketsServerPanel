@@ -14,7 +14,9 @@ class Producto extends Model
         'stock',
         'alerta',
         'subcategoria_id',
-        'almacene_id'
+        'almacene_id',
+        'frecuencia',
+        'preparacion'
     ];
 
     protected $hidden = [
