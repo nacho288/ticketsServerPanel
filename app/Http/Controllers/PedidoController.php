@@ -119,11 +119,10 @@ class PedidoController extends Controller
                     $maximo = $tratos[$key]->maximo;
                 }
 
-                $fecha_actual = date("d-m-Y");
-                $fecha_anterior = date("d-m-Y", strtotime($fecha_actual . "- " . $producto->frecuencia . " days"));
+                $fecha_actual = date("Y-m-d");
+                $fecha_anterior = date("Y-m-d", strtotime($fecha_actual . "- " . $producto->frecuencia . " days"));
 
                 $cantidad_actual = Pedido::where([['almacene_id', '=', $request->almacene_id], ['oficina_id', '=', $request->oficina_id], ['estado', '!=', 4]])
-                    ->whereBetween('fecha', [$fecha_anterior, $fecha_actual])
                     ->with('productos')
                     ->get()
                     ->pluck('productos')
