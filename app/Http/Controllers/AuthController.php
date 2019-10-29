@@ -42,6 +42,13 @@ class AuthController extends Controller
             ]);
         }
         $user = $request->user();
+
+        if ($user->type == 0) {
+            return response()->json([
+                'error' => true
+            ]);
+        }
+
         $tokenResult = $user->createToken('Personal Access Token');
         $token = $tokenResult->token;
         if ($request->remember_me) {
