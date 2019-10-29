@@ -20,6 +20,7 @@ class ProductoController extends Controller
      */
     public function index(Request $request)
     {
+        
 
         if (
             $request->user()->type == 1 && 
@@ -27,6 +28,28 @@ class ProductoController extends Controller
         ){
 
             $productos = Producto::where('almacene_id', $request->almacene_id)->with('subcategoria.categoria')->get();
+
+            if ($request->has('crear')) {
+
+                try {
+                    $tratos = Trato::where('oficina_id', '=', $request->oficina_id)->get();
+
+                    foreach ($productos as $producto) {
+
+                        $key = array_search($producto->id, array_column($tratos->toArray(), 'producto_id'));
+
+                        if (FALSE !== $key) {
+                            $producto->minimo = $tratos[$key]->minimo;
+                            $producto->maximo = $tratos[$key]->maximo;
+                        }
+                    }
+
+                    return $productos->where('maximo', '>', '0');
+                } catch (Exception $e) {
+                    return ["error" => 'true'];
+                }
+
+            }
 
             if ($productos) {
                 return $productos;
@@ -46,12 +69,6 @@ class ProductoController extends Controller
 
             if ($almacen->oficinas->where('id', $request->oficina_id)->first()->usuarios->where('id', $request->user()->id)->first()->exists()) {
 
-                
-                function habilitado(Type $item)
-                {
-                    return ($item->maximo > 0);
-                }
-                
                 try {
                     $productos = $almacen->productos;
                     $tratos = Trato::where('oficina_id', '=', $request->oficina_id)->get();
@@ -106,7 +123,7 @@ class ProductoController extends Controller
 
             $numero = 0;
         
-            while (Producto::where('codigo', $cadena . $numero)->exists()) {
+            while (Producto::where('codigo', strtoupper($cadena) . $numero)->exists()) {
                 $numero++;
             }
 

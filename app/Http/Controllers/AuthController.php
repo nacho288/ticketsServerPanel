@@ -55,7 +55,7 @@ class AuthController extends Controller
                 $tokenResult->token->expires_at
             )
                 ->toDateTimeString(),
-            'user' => User::with('oficinas.almacenes', 'almacenes')->where('id', $request->user()->id)->first()
+            'user' => User::with('oficinas.almacenes', 'almacenes.oficinas.usuarios')->where('id', $request->user()->id)->first()
         ]);
     }
     public function logout(Request $request)
@@ -71,7 +71,7 @@ class AuthController extends Controller
         }
 
         if ($request->user()->type == 1) {
-            return User::with('almacenes')->where('id', $request->user()->id)->first();
+            return User::with('almacenes.oficinas')->where('id', $request->user()->id)->first();
         }
         
         return response()->json($request->user());

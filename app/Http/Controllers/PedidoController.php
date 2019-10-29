@@ -77,7 +77,6 @@ class PedidoController extends Controller
         return ["error" => true];
     }
 
-
     /**
      * Store a newly created resource in storage.
      *
@@ -86,11 +85,10 @@ class PedidoController extends Controller
      */
     public function store(Request $request)
     {
+        if ($this->CanAdminAlmacen($request->user(), $request->almacene_id)) {
 
-        if ($this->CanUserAlmacen($request->user(), $request->oficina_id, $request->almacene_id)) {
-           
             $pedido = new Pedido();
-            $pedido->user_id = $request->user()->id;
+            $pedido->user_id = $request->empleado_id;
             $pedido->almacene_id = $request->almacene_id;
             $pedido->oficina_id = $request->oficina_id;
             $pedido->comentario_usuario = $request->comentario_usuario;
@@ -98,11 +96,11 @@ class PedidoController extends Controller
             $pedido->estado = 0;
             $pedido->save();
 
-            $aprobado= true;
+            $aprobado = true;
             $preparacion = 0;
 
             $tratos = Trato::where('oficina_id', '=', $request->oficina_id)->get();
-            
+
             foreach ($request->productos as $item) {
 
                 $producto = Producto::findOrFail($item['producto_id']);
@@ -111,7 +109,7 @@ class PedidoController extends Controller
                     $preparacion = $producto->preparacion;
                 }
 
-                $key = array_search($producto->id, array_column($tratos->toArray(), 'producto_id'));   
+                $key = array_search($producto->id, array_column($tratos->toArray(), 'producto_id'));
 
                 $minimo = $producto->minimo;
                 $maximo = $producto->maximo;
@@ -122,7 +120,7 @@ class PedidoController extends Controller
                 }
 
                 $fecha_actual = date("d-m-Y");
-                $fecha_anterior = date("d-m-Y", strtotime($fecha_actual . "- " . $producto->frecuencia . " days")); 
+                $fecha_anterior = date("d-m-Y", strtotime($fecha_actual . "- " . $producto->frecuencia . " days"));
 
                 $cantidad_actual = Pedido::where([['almacene_id', '=', $request->almacene_id], ['oficina_id', '=', $request->oficina_id], ['estado', '!=', 4]])
                     ->whereBetween('fecha', [$fecha_anterior, $fecha_actual])
@@ -137,7 +135,6 @@ class PedidoController extends Controller
                 if ($minimo > $item['cantidad'] || $maximo < ($item['cantidad'] + $cantidad_actual)) {
                     $aprobado = false;
                 }
-
             }
 
             $estadoProducto = $aprobado ? 1 : 0;
@@ -321,6 +318,7 @@ class PedidoController extends Controller
             if ($request->estado == 3 && $request->almacene_id == $pedido->almacene_id) {
                 try {
                     $pedido->estado = $request->estado;
+                    $pedido->retirado_por = $request->empleado_id;
                     $pedido->save();
                 } catch (Exception $e) {
                     return ["error" => true];
@@ -396,6 +394,7 @@ class PedidoController extends Controller
             if ($request->estado == 1 && $request->almacene_id == $pedido->almacene_id) {
 
                 $estadoPedido = 1;
+                $todoCancelado = true;
 
                 try {
                     
@@ -403,6 +402,10 @@ class PedidoController extends Controller
 
                         if (!$item['aprobado']) {
                             $estadoPedido = 5;
+                        }
+
+                        if ($item['aprobado']) {
+                            $todoCancelado = false;
                         }
 
                         if ($item['aprobado']) {
@@ -418,7 +421,7 @@ class PedidoController extends Controller
                 }
 
                 try {
-                    $pedido->estado = $estadoPedido;
+                    $pedido->estado = $todoCancelado ? 4 : $estadoPedido; 
                     $pedido->evaluado_por = $request->user()->id;
                     $pedido->save();
                 } catch (Exception $e) {
