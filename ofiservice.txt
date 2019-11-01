@@ -1,0 +1,9 @@
+http://127.0.0.1:8000/api/auth/oficinas
+
+Param keys:
+
+- nombre
+
+Headers:
+
+- Authorization : Bearer eyJ0eXAiOiJKV1QiLCJhb
