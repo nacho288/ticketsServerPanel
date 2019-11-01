@@ -13,12 +13,13 @@ class AuthController extends Controller
     {
         $request->validate([
             'name'     => 'required|string',
-            'email'    => 'required|string|email|unique:users',
+            'username'    => 'required|string|unique:users',
             'password' => 'required|string|confirmed',
             'type' => 'required',
         ]);
         $user = new User([
             'name'     => $request->name,
+            'username'    => $request->username,
             'email'    => $request->email,
             'password' => bcrypt($request->password),
             'type' => $request->type,
@@ -31,11 +32,11 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'email'       => 'required|string',
+            'username'       => 'required|string',
             'password'    => 'required|string',
             'remember_me' => 'boolean',
         ]);
-        $credentials = request(['email', 'password']);
+        $credentials = request(['username', 'password']);
         if (!Auth::attempt($credentials)) {
             return response()->json([
                 'error' => true
@@ -62,7 +63,7 @@ class AuthController extends Controller
                 $tokenResult->token->expires_at
             )
                 ->toDateTimeString(),
-            'user' => User::with('oficinas.almacenes', 'almacenes.oficinas.usuarios')->where('id', $request->user()->id)->first()
+            'user' => User::with('oficinas.almacenes', 'almacenes.oficinas.usuarios', 'almacenes.administradores')->where('id', $request->user()->id)->first()
         ]);
     }
     public function logout(Request $request)

@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
 use App\Pedido;
 use App\Producto;
 use App\Movimiento;
-use App\Usuario;
+use Carbon\Carbon;
 use App\Trato;
+use App\User;
 use App\Traits\CanAccess;
 
-use Illuminate\Http\Request;
 
 class PedidoController extends Controller
 {
@@ -119,10 +122,9 @@ class PedidoController extends Controller
                     $maximo = $tratos[$key]->maximo;
                 }
 
-                $fecha_actual = date("Y-m-d");
-                $fecha_anterior = date("Y-m-d", strtotime($fecha_actual . "- " . $producto->frecuencia . " days"));
-
                 $cantidad_actual = Pedido::where([['almacene_id', '=', $request->almacene_id], ['oficina_id', '=', $request->oficina_id], ['estado', '!=', 4]])
+                    ->where('fecha', '<=', Carbon::now())
+                    ->where('fecha', '>=', Carbon::now()->subDays($producto->frecuencia))
                     ->with('productos')
                     ->get()
                     ->pluck('productos')
@@ -233,6 +235,7 @@ class PedidoController extends Controller
 
             $evaluado_por = $pedido->evaluador ? $pedido->evaluador->name : "";
             $retirado_por = $pedido->retirador ? $pedido->retirador->name : "";
+            $entregado_por = $pedido->entregador ? $pedido->entregador->name : "";
 
             $output = [
                 "pedido_id" => $pedido->id,
@@ -245,6 +248,7 @@ class PedidoController extends Controller
                 "almacene_id" => $pedido->almacene_id,
                 "evaluado_por" => $evaluado_por,
                 "retirado_por" => $retirado_por,
+                "entregado_por" => $entregado_por,
                 "preparacion" => $pedido->preparacion,
                 "comentario_usuario" => $pedido->comentario_usuario,
                 "comentario_administrador" => $pedido->comentario_administrador,
@@ -315,9 +319,32 @@ class PedidoController extends Controller
             }
 
             if ($request->estado == 3 && $request->almacene_id == $pedido->almacene_id) {
+
+                $request->validate([
+                    'username'       => 'required|string',
+                    'password'    => 'required|string',
+                    'remember_me' => 'boolean',
+                ]);
+
+                $credentials = request(['username', 'password']);
+                if (!Auth::guard('web')->attempt($credentials, false, false)) {
+                    return response()->json([
+                        'error' => true
+                    ]);
+                }
+                $user = $request->user();
+
+                if ($user->type == 0) {
+                    return response()->json([
+                        'error' => true
+                    ]);
+                }
+
+
                 try {
                     $pedido->estado = $request->estado;
                     $pedido->retirado_por = $request->empleado_id;
+                    $pedido->entregado_por = User::where('username', $request->username)->first()->id;
                     $pedido->save();
                 } catch (Exception $e) {
                     return ["error" => true];

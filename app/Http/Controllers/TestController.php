@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Pedido;
 use App\Categoria;
 use App\Subcategoria;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Traits\CanAccess;
 
@@ -34,11 +35,9 @@ class TestController extends Controller
 
         $fecha_1 = date("d-m-Y", strtotime($fecha_actual . "- " . $frecuencia . " days"));  */
 
-        $fecha_actual = date("Y-m-d");
-        $fecha_anterior = date("Y-m-d", strtotime($fecha_actual . "- " . 5 . " days"));
-
         $cantidad_actual = Pedido::where([['almacene_id', '=', 1], ['oficina_id', '=', 1], ['estado', '!=', 4]])
-            ->whereBetween('fecha', [$fecha_anterior, $fecha_actual])
+            ->where('fecha', '<=', Carbon::now())
+            ->where('fecha', '>=', Carbon::now()->subDays(5))
             ->with('productos')
             ->get()
             ->pluck('productos')

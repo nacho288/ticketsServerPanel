@@ -26,6 +26,11 @@ class Pedido extends Model
         return $this->hasOne(User::class, 'id', 'retirado_por');
     }
 
+    public function entregador()
+    {
+        return $this->hasOne(User::class, 'id', 'entregado_por');
+    }
+
     public function almacene()
     {
         return $this->hasOne(Almacene::class, 'id', 'almacene_id');

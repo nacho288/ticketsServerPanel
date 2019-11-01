@@ -37,7 +37,11 @@ class OficinaController extends Controller
     {
         if ($request->user()->type == 9) {
             try {
-                Oficina::create(['nombre' => $request->nombre]);
+                $oficina = new Oficina();
+                $oficina->nombre = $request->nombre;
+                $oficina->save();
+                /* $oficina->usuarios()->attach(2);
+                $oficina->almacenes()->attach(1); */
             } catch (Exception $e) {
                 return ["error" => true];
             }

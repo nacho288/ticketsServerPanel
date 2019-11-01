@@ -19,6 +19,7 @@ class CreatePedidosTable extends Migration
             $table->bigInteger('oficina_id')->unsigned();
             $table->bigInteger('user_id')->unsigned();
             $table->bigInteger('evaluado_por')->unsigned()->nullable();
+            $table->bigInteger('entregado_por')->unsigned()->nullable();
             $table->bigInteger('retirado_por')->unsigned()->nullable();
             $table->integer('estado');
             $table->text('comentario_usuario')->nullable();
@@ -31,6 +32,7 @@ class CreatePedidosTable extends Migration
             $table->foreign('oficina_id')->references('id')->on('oficinas');
             $table->foreign('user_id')->references('id')->on('users');
             $table->foreign('evaluado_por')->references('id')->on('users');
+            $table->foreign('entregado_por')->references('id')->on('users');
             $table->foreign('retirado_por')->references('id')->on('users');
         });
     }
