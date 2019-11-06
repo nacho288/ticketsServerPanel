@@ -38,4 +38,9 @@ class Producto extends Model
         return $this->hasOne(Subcategoria::class, 'id', 'subcategoria_id');
     }
 
+    public function pedidos()
+    {
+        return $this->belongsToMany(Pedido::class);
+    }
+
 }

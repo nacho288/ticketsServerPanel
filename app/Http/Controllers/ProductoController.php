@@ -6,8 +6,9 @@ use App\Almacene;
 use App\Producto;
 use App\Subcategoria;
 use App\Movimiento;
-use App\Oficina;
+use App\Pedido;
 use App\Trato;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Exception;
 
@@ -34,6 +35,8 @@ class ProductoController extends Controller
                 try {
                     $tratos = Trato::where('oficina_id', '=', $request->oficina_id)->get();
 
+                    $respuesta = [];
+
                     foreach ($productos as $producto) {
 
                         $key = array_search($producto->id, array_column($tratos->toArray(), 'producto_id'));
@@ -42,9 +45,25 @@ class ProductoController extends Controller
                             $producto->minimo = $tratos[$key]->minimo;
                             $producto->maximo = $tratos[$key]->maximo;
                         }
+
+                        $cantidad_actual = Pedido::where([['almacene_id', '=', $request->almacene_id], ['oficina_id', '=', $request->oficina_id], ['estado', '!=', 4]])
+                            ->where('fecha', '<=', Carbon::now())
+                            ->where('fecha', '>=', Carbon::now()->subDays($producto->frecuencia))
+                            ->with('productos')
+                            ->get()
+                            ->pluck('productos')
+                            ->flatten()
+                            ->where('id', $producto->id)
+                            ->where('pivot.estado', '!=', 2)
+                            ->sum('pivot.cantidad');
+
+                        if ($producto->maximo != 0 && $producto->maximo > $cantidad_actual) {
+                            array_push($respuesta, $producto);
+                        }
                     }
 
-                    return $productos->where('maximo', '>', '0');
+                    return $respuesta;
+
                 } catch (Exception $e) {
                     return ["error" => 'true'];
                 }

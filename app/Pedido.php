@@ -41,4 +41,5 @@ class Pedido extends Model
         return $this->hasOne(Oficina::class, 'id', 'oficina_id');
     }
 
+
 }
