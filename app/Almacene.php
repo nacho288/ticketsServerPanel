@@ -12,7 +12,7 @@ class Almacene extends Model
 
     public function oficinas()
     {
-        return $this->belongsToMany(Oficina::class);
+        return $this->belongsToMany(Oficina::class)->orderBy('nombre');
     }
 
     public function administradores()

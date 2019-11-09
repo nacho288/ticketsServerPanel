@@ -23,7 +23,7 @@ class OficinaController extends Controller
             $request->user()->type == 1 &&
             $request->user()->almacenes()->where('almacene_id', $request->almacene_id)->exists()
         ) {
-            return Almacene::where('id', $request->almacene_id)->firstOrFail()->oficinas;
+            return Almacene::where('id', $request->almacene_id)->firstOrFail()->oficinas->orderBy('nombre')->get();
         }
     }
 

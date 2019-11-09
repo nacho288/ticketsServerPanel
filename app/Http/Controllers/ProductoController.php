@@ -28,7 +28,7 @@ class ProductoController extends Controller
             $request->user()->almacenes()->where('almacene_id', $request->almacene_id)->exists()
         ){
 
-            $productos = Producto::where('almacene_id', $request->almacene_id)->with('subcategoria.categoria')->get();
+            $productos = Producto::where('almacene_id', $request->almacene_id)->with('subcategoria.categoria')->orderBy('nombre')->get();
 
             if ($request->has('crear')) {
 
