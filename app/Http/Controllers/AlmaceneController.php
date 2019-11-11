@@ -38,7 +38,7 @@ class AlmaceneController extends Controller
             try {
                 return $almacene->load('administradores', 'oficinas.usuarios');
             } catch (Exception $e) {
-                return ["error" => 'wooo'];
+                return ["error" => true];
             }
         } else {
             return ["error" => true];

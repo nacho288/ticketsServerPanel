@@ -14,10 +14,9 @@ class Trato extends Model
         'maximo'
     ];
 
-
-    public function usuario()
+    public function oficina()
     {
-        return $this->hasOne('App\Usuario', 'id', 'oficina_id');
+        return $this->hasOne(Oficina::class, 'id', 'oficina_id');
     }
 
 }

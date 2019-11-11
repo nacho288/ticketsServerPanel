@@ -205,7 +205,7 @@ class ProductoController extends Controller
         ) {
 
             try {
-                return $producto->load('tratos', 'movimientos', 'subcategoria.categoria');
+                return $producto->load('tratos.oficina', 'movimientos', 'subcategoria.categoria');
             } catch (Exception $e) {
                 return ["error" => true];
             }
