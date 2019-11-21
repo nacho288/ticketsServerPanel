@@ -53,7 +53,7 @@ class PedidoController extends Controller
 
         if ($this->CanAdminAlmacen($request->user(), $request->almacene_id)) {
 
-            $pedidos = Pedido::where([['almacene_id', '=', $request->almacene_id]])->get();
+            $pedidos = Pedido::where([['almacene_id', '=', $request->almacene_id]])->orderBy('fecha', 'desc')->get();
 
             $pack = [];
 
