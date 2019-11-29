@@ -32,6 +32,7 @@ Route::group(['middleware' => 'cors'], function () {
             Route::apiResource('productos', 'ProductoController');
             Route::apiResource('pedidos', 'PedidoController');
             Route::apiResource('tratos', 'TratoController');
+            Route::apiResource('excepcionales', 'ExcepcionaleController');
             Route::apiResource('categorias', 'CategoriaController');
             Route::apiResource('subcategorias', 'SubcategoriaController');
             Route::apiResource('almacenes', 'AlmaceneController');
@@ -41,6 +42,7 @@ Route::group(['middleware' => 'cors'], function () {
             Route::post('/conectar', 'ConectarController@conectar');
             Route::get('/uproductos', 'ProductoUsuarioController@productos');
             Route::get('/test', 'TestController@test');
+            Route::get('/formatear', 'CodigoController@formatear');
         });
     });
 

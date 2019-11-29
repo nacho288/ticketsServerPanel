@@ -10,6 +10,7 @@ use App\Producto;
 use App\Movimiento;
 use Carbon\Carbon;
 use App\Trato;
+use App\Excepcionale;
 use App\User;
 use App\Traits\CanAccess;
 
@@ -88,179 +89,156 @@ class PedidoController extends Controller
      */
     public function store(Request $request)
     {
-        if ($this->CanAdminAlmacen($request->user(), $request->almacene_id)) {
 
-            $pedido = new Pedido();
-            $pedido->user_id = $request->empleado_id;
-            $pedido->almacene_id = $request->almacene_id;
-            $pedido->oficina_id = $request->oficina_id;
-            $pedido->comentario_usuario = $request->comentario_usuario;
-            $pedido->fecha = date('Y-m-d H:i:s');
-            $pedido->estado = 0;
-            $pedido->save();
-
-            $aprobado = true;
-            $preparacion = 0;
-
-            $tratos = Trato::where('oficina_id', '=', $request->oficina_id)->get();
-
-            foreach ($request->productos as $item) {
-
-                $producto = Producto::findOrFail($item['producto_id']);
-
-                if ($producto->preparacion > $preparacion) {
-                    $preparacion = $producto->preparacion;
-                }
-
-                $key = array_search($producto->id, array_column($tratos->toArray(), 'producto_id'));
-
-                $minimo = $producto->minimo;
-                $maximo = $producto->maximo;
-
-                if (FALSE !== $key) {
-                    $minimo = $tratos[$key]->minimo;
-                    $maximo = $tratos[$key]->maximo;
-                }
-
-                $cantidad_actual = Pedido::where([['almacene_id', '=', $request->almacene_id], ['oficina_id', '=', $request->oficina_id], ['estado', '!=', 4]])
-                    ->where('fecha', '<=', Carbon::now())
-                    ->where('fecha', '>=', Carbon::now()->subDays($producto->frecuencia))
-                    ->with('productos')
-                    ->get()
-                    ->pluck('productos')
-                    ->flatten()
-                    ->where('id', $producto->id)
-                    ->where('pivot.estado', '!=', 2)
-                    ->sum('pivot.cantidad');
-
-                if ($minimo > $item['cantidad'] || $maximo < ($item['cantidad'] + $cantidad_actual)) {
-                    $aprobado = false;
-                }
+        if ($request->user()->type == 0) {
+            if (!$this->CanUserAlmacen($request->user(), $request->oficina_id, $request->almacene_id)) {
+                return ["error" => 'true'];
             }
-
-            $estadoProducto = $aprobado ? 1 : 0;
-
-            foreach ($request->productos as $item) {
-                $pedido->productos()->attach($item['producto_id'], ['cantidad' => $item['cantidad'], 'estado' => $estadoProducto]);
-            }
-
-            $pedido->estado = $aprobado ? 1 : 0;
-            $pedido->preparacion = $preparacion;
-            $pedido->save();
-
-            return ["aprobado" => $aprobado]; 
-
         }
 
-        return ["error" => true];
+        if ($request->user()->type == 1) {
+            if (!$this->CanAdminAlmacen($request->user(), $request->almacene_id)) {
+                return ["error" => 'true'];
+            }
+        }
+
+        $pedido = new Pedido();
+
+        if ($request->user()->type == 0) {
+            $pedido->user_id = $request->user()->id;
+        } else {
+            $pedido->user_id = $request->empleado_id;
+        }
+        
+        $pedido->almacene_id = $request->almacene_id;
+        $pedido->oficina_id = $request->oficina_id;
+        $pedido->comentario_usuario = $request->comentario_usuario;
+        $pedido->fecha = date('Y-m-d H:i:s');
+        $pedido->estado = 0;
+        $pedido->save();
+
+        $aprobado = true;
+        $preparacion = 0;
+
+        $tratos = Trato::where('oficina_id', '=', $request->oficina_id)->get();
+
+        $excepcionales = Excepcionale::where('oficina_id', '=', $request->oficina_id)
+            ->where('inicio', '<=', Carbon::now())
+            ->where('final', '>=', Carbon::now())
+            ->get();
+
+        foreach ($request->productos as $item) {
+
+            $producto = Producto::findOrFail($item['producto_id']);
+
+            if ($producto->preparacion > $preparacion) {
+                $preparacion = $producto->preparacion;
+            }
+
+            $key = array_search($producto->id, array_column($tratos->toArray(), 'producto_id'));
+
+            $minimo = $producto->minimo;
+            $maximo = $producto->maximo;
+
+            if (FALSE !== $key) {
+                $minimo = $tratos[$key]->minimo;
+                $maximo = $tratos[$key]->maximo;
+            }
+
+            $key2 = array_search($producto->id, array_column($excepcionales->toArray(), 'producto_id'));
+
+            if (FALSE !== $key2) {
+                $producto->maximo += $excepcionales[$key2]->cantidad;
+            }
+
+            $cantidad_actual = Pedido::where([['almacene_id', '=', $request->almacene_id], ['oficina_id', '=', $request->oficina_id], ['estado', '!=', 4]])
+                ->where('fecha', '<=', Carbon::now())
+                ->where('fecha', '>=', Carbon::now()->subDays($producto->frecuencia))
+                ->with('productos')
+                ->get()
+                ->pluck('productos')
+                ->flatten()
+                ->where('id', $producto->id)
+                ->where('pivot.estado', '!=', 2)
+                ->sum('pivot.cantidad');
+
+            if ($minimo > $item['cantidad'] || $maximo < ($item['cantidad'] + $cantidad_actual)) {
+                $aprobado = false;
+            }
+        }
+
+        $estadoProducto = $aprobado ? 1 : 0;
+
+        foreach ($request->productos as $item) {
+            $pedido->productos()->attach($item['producto_id'], ['cantidad' => $item['cantidad'], 'estado' => $estadoProducto]);
+        }
+
+        $pedido->estado = $aprobado ? 1 : 0;
+        $pedido->preparacion = $preparacion;
+        $pedido->save();
+
+        return ["aprobado" => $aprobado]; 
 
     }
     
     public function show(Request $request, Pedido $pedido)
     {
 
-        if ($this->CanUserOficina($request->user(), $request->oficina_id)) {
-
-            if ($pedido->oficina_id != $request->oficina_id) {
-                return ["error" => true];
+        if ($request->user()->type == 0) {
+            if (!$this->CanUserOficina($request->user(), $request->oficina_id) || $pedido->oficina_id != $request->oficina_id) {
+                return ["error" => 'true'];
             }
-
-            $pro_pack = [];
-
-            foreach ($pedido->productos as $producto) {
-
-                $values = [
-                    "producto_id" => $producto->pivot->producto_id,
-                    "codigo" => $producto->codigo,
-                    "nombre" => $producto->nombre,
-                    "cantidad" => $producto->pivot->cantidad,
-                    "estado" => $producto->pivot->estado,
-                    "stock" => $producto->stock,
-                    "alerta" => $producto->alerta,
-                ];
-
-                array_push($pro_pack, $values);
-
-            }
-
-            $evaluado_por = $pedido->evaluador ? $pedido->evaluador->name : "";
-            $retirado_por = $pedido->retirador ? $pedido->retirador->name : "";
-
-            $output = [
-                "pedido_id" => $pedido->id,
-                "estado" => $pedido->estado,
-                "user" => $pedido->user->name,
-                "user_id" => $pedido->user->id,
-                "oficina_id" => $pedido->oficina_id,
-                "oficina" => $pedido->oficina->nombre,
-                "almacen" => $pedido->almacene->nombre,
-                "almacene_id" => $pedido->almacene_id, 
-                "evaluado_por" => $evaluado_por,
-                "retirado_por" => $retirado_por,
-                "preparacion" => $pedido->preparacion,
-                "comentario_usuario" => $pedido->comentario_usuario,
-                "comentario_administrador" => $pedido->comentario_administrador,
-                "fecha" => $pedido->fecha,
-                "productos" => $pro_pack,
-            ];
-
-            return $output;
-
         }
 
-        if ($this->CanAdminAlmacen($request->user(), $request->almacene_id)) {
-
-            if ($pedido->almacene_id != $request->almacene_id) {
-                return ["error" => true];
+        if ($request->user()->type == 1) {
+            if (!$this->CanAdminAlmacen($request->user(), $request->almacene_id) || $pedido->almacene_id != $request->almacene_id) {
+                return ["error" => 'true'];
             }
+        }
+ 
+        $pro_pack = [];
 
-            $pro_pack = [];
+        foreach ($pedido->productos as $producto) {
 
-            foreach ($pedido->productos as $producto) {
-
-                $values = [
-                    "producto_id" => $producto->pivot->producto_id,
-                    "codigo" => $producto->codigo,
-                    "nombre" => $producto->nombre,
-                    "cantidad" => $producto->pivot->cantidad,
-                    "estado" => $producto->pivot->estado,
-                    "minimo" => $producto->minimo,
-                    "maximo" => $producto->maximo,
-                    "stock" => $producto->stock,
-                    "alerta" => $producto->alerta,
-                ];
-
-                array_push($pro_pack, $values);
-            }
-
-            $evaluado_por = $pedido->evaluador ? $pedido->evaluador->name : "";
-            $retirado_por = $pedido->retirador ? $pedido->retirador->name : "";
-            $entregado_por = $pedido->entregador ? $pedido->entregador->name : "";
-
-            $output = [
-                "pedido_id" => $pedido->id,
-                "estado" => $pedido->estado,
-                "user" => $pedido->user->name,
-                "user_id" => $pedido->user->id,
-                "oficina_id" => $pedido->oficina_id,
-                "oficina" => $pedido->oficina->nombre,
-                "almacen" => $pedido->almacene->nombre,
-                "almacene_id" => $pedido->almacene_id,
-                "evaluado_por" => $evaluado_por,
-                "retirado_por" => $retirado_por,
-                "entregado_por" => $entregado_por,
-                "preparacion" => $pedido->preparacion,
-                "comentario_usuario" => $pedido->comentario_usuario,
-                "comentario_administrador" => $pedido->comentario_administrador,
-                "fecha" => $pedido->fecha,
-                "productos" => $pro_pack
+            $values = [
+                "producto_id" => $producto->pivot->producto_id,
+                "codigo" => $producto->codigo,
+                "nombre" => $producto->nombre,
+                "cantidad" => $producto->pivot->cantidad,
+                "estado" => $producto->pivot->estado,
+                "minimo" => $producto->minimo,
+                "maximo" => $producto->maximo,
+                "stock" => $producto->stock,
+                "alerta" => $producto->alerta,
             ];
 
-            return $output;
-
+            array_push($pro_pack, $values);
         }
 
-        return ["error" => true];
+        $evaluado_por = $pedido->evaluador ? $pedido->evaluador->name : "";
+        $retirado_por = $pedido->retirador ? $pedido->retirador->name : "";
+        $entregado_por = $pedido->entregador ? $pedido->entregador->name : "";
+
+        $output = [
+            "pedido_id" => $pedido->id,
+            "estado" => $pedido->estado,
+            "user" => $pedido->user->name,
+            "user_id" => $pedido->user->id,
+            "oficina_id" => $pedido->oficina_id,
+            "oficina" => $pedido->oficina->nombre,
+            "almacen" => $pedido->almacene->nombre,
+            "almacene_id" => $pedido->almacene_id,
+            "evaluado_por" => $evaluado_por,
+            "retirado_por" => $retirado_por,
+            "entregado_por" => $entregado_por,
+            "preparacion" => $pedido->preparacion,
+            "comentario_usuario" => $pedido->comentario_usuario,
+            "comentario_administrador" => $pedido->comentario_administrador,
+            "fecha" => $pedido->fecha,
+            "productos" => $pro_pack
+        ];
+
+        return $output;
 
     }
 
@@ -340,7 +318,6 @@ class PedidoController extends Controller
                     ]);
                 }
 
-
                 try {
                     $pedido->estado = $request->estado;
                     $pedido->retirado_por = $request->empleado_id;
@@ -373,7 +350,15 @@ class PedidoController extends Controller
 
                 $productos = $pedido->productos->where('pivot.estado', 1);
 
+                $lista = [];
+
                 foreach ($productos as $producto) {
+                    $item = [
+                        "nombre" => $producto->nombre,
+                        "enPedido" => $producto->pivot->cantidad,
+                        "enStock" => $producto->stock,
+                    ];
+                    array_push($lista, $item);
                     if ($producto->pivot->cantidad > $producto->stock) {
                         $posible = false;
                     }
@@ -413,7 +398,7 @@ class PedidoController extends Controller
                     }
                 }
 
-                return ["sucess" => $posible, "error" => false];
+                return ["sucess" => $posible, "error" => false, 'lista' => $lista];
 
             }
 

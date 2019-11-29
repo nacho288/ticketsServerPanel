@@ -8,12 +8,16 @@ use App\Subcategoria;
 use App\Movimiento;
 use App\Pedido;
 use App\Trato;
+use App\Excepcionale;
 use Carbon\Carbon;
+use App\Traits\CanAccess;
 use Illuminate\Http\Request;
 use Exception;
 
 class ProductoController extends Controller
 {
+    use CanAccess;
+    
     /**
      * Display a listing of the resource.
      *
@@ -22,100 +26,76 @@ class ProductoController extends Controller
     public function index(Request $request)
     {
         
-
-        if (
-            $request->user()->type == 1 && 
-            $request->user()->almacenes()->where('almacene_id', $request->almacene_id)->exists()
-        ){
-
-            $productos = Producto::where('almacene_id', $request->almacene_id)->with('subcategoria.categoria')->orderBy('nombre')->get();
-
-            if ($request->has('crear')) {
-
-                try {
-                    $tratos = Trato::where('oficina_id', '=', $request->oficina_id)->get();
-
-                    $respuesta = [];
-
-                    foreach ($productos as $producto) {
-
-                        $key = array_search($producto->id, array_column($tratos->toArray(), 'producto_id'));
-
-                        if (FALSE !== $key) {
-                            $producto->minimo = $tratos[$key]->minimo;
-                            $producto->maximo = $tratos[$key]->maximo;
-                        }
-
-                        $cantidad_actual = Pedido::where([['almacene_id', '=', $request->almacene_id], ['oficina_id', '=', $request->oficina_id], ['estado', '!=', 4]])
-                            ->where('fecha', '<=', Carbon::now())
-                            ->where('fecha', '>=', Carbon::now()->subDays($producto->frecuencia))
-                            ->with('productos')
-                            ->get()
-                            ->pluck('productos')
-                            ->flatten()
-                            ->where('id', $producto->id)
-                            ->where('pivot.estado', '!=', 2)
-                            ->sum('pivot.cantidad');
-
-                        if ($producto->maximo != 0 && $producto->maximo > $cantidad_actual) {
-                            array_push($respuesta, $producto);
-                        }
-                    }
-
-                    return $respuesta;
-
-                } catch (Exception $e) {
-                    return ["error" => 'true'];
-                }
-
+        if ($request->user()->type == 0) {
+            if (!$this->CanUserAlmacen($request->user(), $request->oficina_id, $request->almacene_id)) {
+                return ["error" => 'true'];
             }
+        }
 
-            if ($productos) {
-                return $productos;
-            } else {
-                return ["empy" => true];
+        if ($request->user()->type == 1) {
+            if (!$this->CanAdminAlmacen($request->user(), $request->almacene_id)) {
+                return ["error" => 'true'];
             }
-            
-        } 
-        
-        if ($request->user()->type == 0){
+        }
+
+        $productos = Producto::where('almacene_id', $request->almacene_id)->with('subcategoria.categoria')->orderBy('nombre')->get();
+
+        if ($request->user()->type == 0 || $request->has('crear')) {
 
             try {
-                $almacen = Almacene::where('id', $request->almacene_id)->with('oficinas.usuarios', 'productos')->first();
-            } catch (Exception $e) {
-                return ["error" => true];
-            }
+                $tratos = Trato::where('oficina_id', '=', $request->oficina_id)->get();
+                $excepcionales = Excepcionale::where('oficina_id', '=', $request->oficina_id)
+                                              ->where('inicio', '<=', Carbon::now())
+                                              ->where('final', '>=', Carbon::now())
+                                              ->get();
 
-            if ($almacen->oficinas->where('id', $request->oficina_id)->first()->usuarios->where('id', $request->user()->id)->first()->exists()) {
+                $respuesta = [];
 
-                try {
-                    $productos = $almacen->productos;
-                    $tratos = Trato::where('oficina_id', '=', $request->oficina_id)->get();
+                foreach ($productos as $producto) {
 
-                    foreach ($productos as $producto) {
+                    $key = array_search($producto->id, array_column($tratos->toArray(), 'producto_id'));
 
-                        $key = array_search($producto->id, array_column($tratos->toArray(), 'producto_id'));
-
-                        if (FALSE !== $key) {
-                            $producto->minimo = $tratos[$key]->minimo;
-                            $producto->maximo = $tratos[$key]->maximo;
-                        }
+                    if (FALSE !== $key) {
+                        $producto->minimo = $tratos[$key]->minimo;
+                        $producto->maximo = $tratos[$key]->maximo;
                     }
 
-                    return $productos->where('maximo', '>', '0');
+                    $key2 = array_search($producto->id, array_column($excepcionales->toArray(), 'producto_id'));
 
-                } catch (Exception $e) {
-                    return ["error" => 'true'];
+                    if (FALSE !== $key2) {
+                        $producto->maximo += $excepcionales[$key2]->cantidad;
+                    }
+
+                    $cantidad_actual = Pedido::where([['almacene_id', '=', $request->almacene_id], ['oficina_id', '=', $request->oficina_id], ['estado', '!=', 4]])
+                        ->where('fecha', '<=', Carbon::now())
+                        ->where('fecha', '>=', Carbon::now()->subDays($producto->frecuencia))
+                        ->with('productos')
+                        ->get()
+                        ->pluck('productos')
+                        ->flatten()
+                        ->where('id', $producto->id)
+                        ->where('pivot.estado', '!=', 2)
+                        ->sum('pivot.cantidad');
+
+                    if ($producto->maximo != 0 && $producto->maximo > $cantidad_actual) {
+                        array_push($respuesta, $producto);
+                    }
                 }
 
+                return $respuesta;
+
+            } catch (Exception $e) {
+                return ["error" => 'true'];
             }
 
-            return ["error" => true]; 
-
         }
-           
-        return ["error" => true]; 
-  
+
+        if ($productos) {
+            return $productos;
+        } else {
+            return ["empy" => true];
+        }
+            
     }
 
     /**
@@ -205,7 +185,7 @@ class ProductoController extends Controller
         ) {
 
             try {
-                return $producto->load('tratos.oficina', 'movimientos', 'subcategoria.categoria');
+                return $producto->load('tratos.oficina', 'movimientos', 'subcategoria.categoria', 'excepcionales.oficina');
             } catch (Exception $e) {
                 return ["error" => true];
             }

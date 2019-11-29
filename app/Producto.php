@@ -28,6 +28,11 @@ class Producto extends Model
         return $this->hasMany(Trato::class);
     }
 
+    public function excepcionales()
+    {
+        return $this->hasMany(Excepcionale::class);
+    }
+
     public function movimientos()
     {
         return $this->hasMany(Movimiento::class);
