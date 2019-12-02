@@ -45,9 +45,9 @@ class ProductoController extends Controller
             try {
                 $tratos = Trato::where('oficina_id', '=', $request->oficina_id)->get();
                 $excepcionales = Excepcionale::where('oficina_id', '=', $request->oficina_id)
-                                              ->where('inicio', '<=', Carbon::now())
-                                              ->where('final', '>=', Carbon::now())
-                                              ->get();
+                    ->whereDate('inicio', '<=', Carbon::today())
+                    ->whereDate('final', '>=', Carbon::today())
+                    ->get();
 
                 $respuesta = [];
 
@@ -67,8 +67,8 @@ class ProductoController extends Controller
                     }
 
                     $cantidad_actual = Pedido::where([['almacene_id', '=', $request->almacene_id], ['oficina_id', '=', $request->oficina_id], ['estado', '!=', 4]])
-                        ->where('fecha', '<=', Carbon::now())
-                        ->where('fecha', '>=', Carbon::now()->subDays($producto->frecuencia))
+                        ->whereDate('fecha', '<=', Carbon::today()->toDateString())
+                        ->whereDate('fecha', '>', Carbon::today()->subDays($producto->frecuencia)->toDateString())
                         ->with('productos')
                         ->get()
                         ->pluck('productos')

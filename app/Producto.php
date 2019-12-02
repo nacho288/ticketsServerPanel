@@ -35,7 +35,7 @@ class Producto extends Model
 
     public function movimientos()
     {
-        return $this->hasMany(Movimiento::class);
+        return $this->hasMany(Movimiento::class)->orderBy('id', 'desc');
     }
 
     public function subcategoria()

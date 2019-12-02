@@ -40,12 +40,12 @@ class User extends Authenticatable
 
     public function almacenes()
     {
-        return $this->belongsToMany(Almacene::class);
+        return $this->belongsToMany(Almacene::class)->orderBy('nombre');;
     }
 
     public function oficinas()
     {
-        return $this->belongsToMany(Oficina::class);
+        return $this->belongsToMany(Oficina::class)->orderBy('nombre');;
     }
     
 }

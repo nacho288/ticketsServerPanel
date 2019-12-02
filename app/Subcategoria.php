@@ -21,4 +21,9 @@ class Subcategoria extends Model
         return $this->hasOne(Categoria::class, 'id', 'categoria_id');
     }
 
+    public function productos()
+    {
+        return $this->hasMany(Producto::class)->orderBy('nombre');
+    }
+
 }

@@ -72,8 +72,20 @@ class SubcategoriaController extends Controller
      * @param  \App\Subcategoria  $subcategoria
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Subcategoria $subcategoria)
+    public function destroy(Request $request, Subcategoria $subcategoria)
     {
-        //
+        if (
+            $request->user()->type == 1 &&
+            $request->user()->almacenes()->where('almacene_id', $request->almacene_id)->exists() &&
+            $subcategoria->productos->count() == 0
+        ) {
+            try {
+                $subcategoria->delete();
+            } catch (Exception $e) {
+                return ["error" => true];
+            }
+            return ["error" => false];
+        }
+        return ["error" => true];
     }
 }

@@ -7,6 +7,8 @@ use App\Categoria;
 use App\Subcategoria;
 use App\Producto;
 use App\Trato;
+use App\Excepcionale;
+
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Traits\CanAccess;
@@ -32,40 +34,14 @@ class TestController extends Controller
             ->get();
  */
 
-        $productos = Producto::where('almacene_id', '=', 1)->get(); 
 
-        $tratos = Trato::where('oficina_id', '=', 1)->get();
 
-        $respuesta = [];
+    /* 
 
-        foreach ($productos as $producto) {
+        return ['respuesta' => Carbon::today()->subDays(2)->toDateString()];
+ */
 
-            $key = array_search($producto->id, array_column($tratos->toArray(), 'producto_id'));
-
-            if (FALSE !== $key) {
-                $producto->minimo = $tratos[$key]->minimo;
-                $producto->maximo = $tratos[$key]->maximo;
-            }
-
-            $cantidad_actual = Pedido::where([['almacene_id', '=',1], ['oficina_id', '=', 1], ['estado', '!=', 4]])
-                ->where('fecha', '<=', Carbon::now())
-                ->where('fecha', '>=', Carbon::now()->subDays($producto->frecuencia))
-                ->with('productos')
-                ->get()
-                ->pluck('productos')
-                ->flatten()
-                ->where('id', $producto->id)
-                ->where('pivot.estado', '!=', 2)
-                ->sum('pivot.cantidad');
-
-            if ($producto->maximo != 0 && $producto->maximo > $cantidad_actual) {
-                array_push($respuesta, $producto);
-            }
-        }
-
- 
-
-        return ['productos' =>  $productos , 'tratos' => $tratos, 'respuesta' => $respuesta];
+        return ['respuesta' => Pedido::all()->first()->fecha >= Carbon::today()->subDays(2)->toDateString()];
             
 
     }

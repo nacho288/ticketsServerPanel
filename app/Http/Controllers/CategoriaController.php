@@ -19,7 +19,10 @@ class CategoriaController extends Controller
             $request->user()->type == 1 &&
             $request->user()->almacenes()->where('almacene_id', $request->almacene_id)->exists()
         ){
-            return Categoria::where('almacene_id', $request->almacene_id)->with('subcategorias')->orderBy('nombre')->get();   
+            return Categoria::where('almacene_id', $request->almacene_id)
+                            ->with('subcategorias.productos')
+                            ->orderBy('nombre')
+                            ->get();   
         }
 
         if (
@@ -94,8 +97,20 @@ class CategoriaController extends Controller
      * @param  \App\Categoria  $categoria
      * @return \Illuminate\Http\Response
      */
-    public function destroy(Categoria $categoria)
+    public function destroy(Request $request, Categoria $categoria)
     {
-        //
+        if (
+            $request->user()->type == 1 &&
+            $request->user()->almacenes()->where('almacene_id', $request->almacene_id)->exists() &&
+            $categoria->subcategorias->count() == 0
+        ) {
+            try {
+                $categoria->delete();
+            } catch (Exception $e) {
+                return ["error" => true];
+            }
+            return ["error" => false];
+        }
+        return ["error" => true];
     }
 }

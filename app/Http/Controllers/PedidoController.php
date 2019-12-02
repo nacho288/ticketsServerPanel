@@ -28,7 +28,7 @@ class PedidoController extends Controller
 
         if ($this->CanUserOficina($request->user(), $request->oficina_id)) {
 
-            $pedidos = Pedido::where([['oficina_id', '=', $request->oficina_id]])->get();
+            $pedidos = Pedido::where([['oficina_id', '=', $request->oficina_id]])->orderBy('id', 'desc')->get();
 
             $pack = [];
 
@@ -54,7 +54,7 @@ class PedidoController extends Controller
 
         if ($this->CanAdminAlmacen($request->user(), $request->almacene_id)) {
 
-            $pedidos = Pedido::where([['almacene_id', '=', $request->almacene_id]])->orderBy('fecha', 'desc')->get();
+            $pedidos = Pedido::where([['almacene_id', '=', $request->almacene_id]])->orderBy('id', 'desc')->get();
 
             $pack = [];
 
@@ -113,7 +113,7 @@ class PedidoController extends Controller
         $pedido->almacene_id = $request->almacene_id;
         $pedido->oficina_id = $request->oficina_id;
         $pedido->comentario_usuario = $request->comentario_usuario;
-        $pedido->fecha = date('Y-m-d H:i:s');
+        $pedido->fecha = Carbon::today()->toDateString();
         $pedido->estado = 0;
         $pedido->save();
 
@@ -123,8 +123,8 @@ class PedidoController extends Controller
         $tratos = Trato::where('oficina_id', '=', $request->oficina_id)->get();
 
         $excepcionales = Excepcionale::where('oficina_id', '=', $request->oficina_id)
-            ->where('inicio', '<=', Carbon::now())
-            ->where('final', '>=', Carbon::now())
+            ->whereDate('inicio', '<=', Carbon::today())
+            ->whereDate('final', '>=', Carbon::today())
             ->get();
 
         foreach ($request->productos as $item) {
@@ -148,12 +148,12 @@ class PedidoController extends Controller
             $key2 = array_search($producto->id, array_column($excepcionales->toArray(), 'producto_id'));
 
             if (FALSE !== $key2) {
-                $producto->maximo += $excepcionales[$key2]->cantidad;
+                $maximo += $excepcionales[$key2]->cantidad;
             }
 
             $cantidad_actual = Pedido::where([['almacene_id', '=', $request->almacene_id], ['oficina_id', '=', $request->oficina_id], ['estado', '!=', 4]])
-                ->where('fecha', '<=', Carbon::now())
-                ->where('fecha', '>=', Carbon::now()->subDays($producto->frecuencia))
+                ->whereDate('fecha', '<=', Carbon::today()->toDateString())
+                ->whereDate('fecha', '>', Carbon::today()->subDays($producto->frecuencia)->toDateString())
                 ->with('productos')
                 ->get()
                 ->pluck('productos')

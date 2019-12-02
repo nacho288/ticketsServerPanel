@@ -19,4 +19,9 @@ class Categoria extends Model
     {
         return $this->hasMany(Subcategoria::class)->orderBy('nombre');
     }
+
+    public function subcategoriasCount()
+    {
+        return $this->subcategorias()->count();
+    }
 }
