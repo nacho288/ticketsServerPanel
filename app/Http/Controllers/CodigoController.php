@@ -17,35 +17,42 @@ class CodigoController extends Controller
 
     public function formatear(Request $request)
     {
-        $almacenes = Almacene::all();
 
-        foreach ($almacenes as $almacen) {
-            $productos = Producto::where('almacene_id', '=', $almacen->id)->get(); 
+        if ($request->user()->type == 9) {
 
-            foreach ($productos as $producto) {
+            try {
+                $almacenes = Almacene::all();
 
-                $cadena = substr(Subcategoria::find($producto->subcategoria_id)->categoria->nombre, 0, 1) .
-                    substr(Subcategoria::find($producto->subcategoria_id)->nombre, 0, 1) .
-                    substr($producto->nombre, 0, 1);
+                foreach ($almacenes as $almacen) {
+                    $productos = Producto::where('almacene_id', '=', $almacen->id)->get();
 
-                $numero = 0;
+                    foreach ($productos as $producto) {
 
-                while (Producto::where('codigo', strtoupper($cadena) . $numero)->exists()) {
-                    $numero++;
+                        $cadena = substr(Subcategoria::find($producto->subcategoria_id)->categoria->nombre, 0, 1) .
+                            substr(Subcategoria::find($producto->subcategoria_id)->nombre, 0, 1) .
+                            substr($producto->nombre, 0, 1);
+
+                        $numero = 0;
+
+                        while (Producto::where('codigo', strtoupper($cadena) . $numero)->exists()) {
+                            $numero++;
+                        }
+
+                        $codigo = strtoupper($cadena) . $numero;
+
+                        $producto->codigo = $codigo;
+
+                        $producto->save();
+                    }
                 }
-
-                $codigo = strtoupper($cadena) . $numero;
-
-                $producto->codigo = $codigo;
-
-                $producto->save();
-
+            } catch (Exception $e) {
+                return ["error" => true];
             }
+            return ["error" => false];
 
         }
 
-        return ['respuesta' => '$respuesta'];
-            
+        return ["error" => true];
 
     }
 }
