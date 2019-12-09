@@ -15,7 +15,9 @@ class Cors
      */
 
     private static $allowedOriginsWhitelist = [
-        'http://localhost:8000'
+        'http://localhost:8000',
+        'https://server-tickets-panel.herokuapp.com/',
+        'https://tickets-288-panel.herokuapp.com/'
     ];
 
     // All the headers must be a string
