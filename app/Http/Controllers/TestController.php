@@ -21,28 +21,13 @@ class TestController extends Controller
     public function test(Request $request)
     {
 
+        $consulta =  Trato::where('oficina_id', 22)->where('producto_id', 397);
 
-        /*         $productos = Producto::doesntHave('tratos')->select('productos.id', 'nombre', 'codigo', 'subcategoria_id', 'almacene_id', 'minimo', 'maximo', 'stock', 'alerta', 'frecuencia', 'preparacion');
+        $primero =  $consulta->first();
 
-        $productos2 = Producto::where('almacene_id', '=', 1)
-            ->join('tratos', function ($join) {
-                $join->on('productos.id', '=', 'tratos.producto_id')
-                    ->where('tratos.oficina_id', '=', 1);
-            })
-            ->select('productos.id', 'nombre', 'codigo', 'subcategoria_id', 'almacene_id', 'tratos.minimo', 'tratos.maximo', 'stock', 'alerta', 'frecuencia', 'preparacion')
-            ->union($productos)
-            ->get();
- */
-
-
-
-    /* 
-
-        return ['respuesta' => Carbon::today()->subDays(2)->toDateString()];
- */
-
-        return ['respuesta' => Pedido::all()->first()->fecha >= Carbon::today()->subDays(2)->toDateString()];
-            
-
+        return [$consulta->exists(),
+        'asd' => $primero
+    ];
+    
     }
 }

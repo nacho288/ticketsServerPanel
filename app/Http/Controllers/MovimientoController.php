@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Movimiento;
 use Illuminate\Http\Request;
+use Exception;
 
 class MovimientoController extends Controller
 {

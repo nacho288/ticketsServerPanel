@@ -2,15 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Pedido;
-use App\Categoria;
 use App\Subcategoria;
 use App\Producto;
-use App\Trato;
-use Carbon\Carbon;
 use App\Almacene;
 use Illuminate\Http\Request;
-use App\Traits\CanAccess;
+use Exception;
 
 class CodigoController extends Controller
 {

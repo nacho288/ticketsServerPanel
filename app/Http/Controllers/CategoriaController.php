@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Almacene;
 use App\Categoria;
 use Illuminate\Http\Request;
+use Exception;
 
 class CategoriaController extends Controller
 {

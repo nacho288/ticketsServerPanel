@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Oficina;
 use App\Almacene;
 use Illuminate\Http\Request;
+use Exception;
 
 class OficinaController extends Controller
 {

@@ -67,6 +67,26 @@ class AuthController extends Controller
             'user' => User::with('oficinas.almacenes', 'almacenes.oficinas.usuarios', 'almacenes.administradores')->where('id', $request->user()->id)->first()
         ]);
     }
+
+    public function reset(Request $request)
+    {
+
+        if ($request->user()->type == 9 && $request->user()->id != $request->userMod_id) {
+          
+            try {
+                $aModificar = User::where('id', $request->userMod_id)->first();
+                $aModificar->password = bcrypt($request->password);
+                $aModificar->save();
+                return ["error" => false];
+            } catch (Exception $e) {
+                return ["error" => true];
+            }
+
+        }
+
+        return ["error" => true];
+    }
+
     public function logout(Request $request)
     {
         $request->user()->token()->revoke();

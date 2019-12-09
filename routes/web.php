@@ -15,9 +15,9 @@
     return view('welcome');
 });
  */
-Route::get('/', function () {
+/* Route::get('/', function () {
     $pedido = App\Pedido::findOrFail(1);
     $usuario = App\Usuario::findOrFail(2);
 
     return $usuario->pedidos;
-});
+}); */

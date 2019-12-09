@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Excepcionale;
 use Illuminate\Http\Request;
+use Exception;
 
 class ExcepcionaleController extends Controller
 {

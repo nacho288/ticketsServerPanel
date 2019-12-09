@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Trato;
 use App\Producto;
+use Exception;
 
 use Illuminate\Http\Request;
 
@@ -44,7 +45,17 @@ class TratoController extends Controller
         ) {
 
             try {
-                Trato::create($request->all());
+                $consulta =  Trato::where('oficina_id', $request->oficina_id
+                    )->where('producto_id', $request->producto_id);
+
+                if ($consulta->exists()) {
+                    $tratoViejo = $consulta->first();
+                    $tratoViejo->minimo = $request->minimo;
+                    $tratoViejo->maximo = $request->maximo;
+                    $tratoViejo->save();
+                } else {
+                    Trato::create($request->all());
+                }
             } catch (Exception $e) {
                 return ["error" => true];
             }

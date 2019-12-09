@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Almacene;
 use Illuminate\Http\Request;
+use Exception;
 
 class AlmaceneController extends Controller
 {

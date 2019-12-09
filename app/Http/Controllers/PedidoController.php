@@ -13,6 +13,7 @@ use App\Trato;
 use App\Excepcionale;
 use App\User;
 use App\Traits\CanAccess;
+use Exception;
 
 
 class PedidoController extends Controller
@@ -145,11 +146,7 @@ class PedidoController extends Controller
                 $maximo = $tratos[$key]->maximo;
             }
 
-            $key2 = array_search($producto->id, array_column($excepcionales->toArray(), 'producto_id'));
-
-            if (FALSE !== $key2) {
-                $maximo += $excepcionales[$key2]->cantidad;
-            }
+            $maximo += $excepcionales->where('producto_id', $producto->id)->sum('cantidad');
 
             $cantidad_actual = Pedido::where([['almacene_id', '=', $request->almacene_id], ['oficina_id', '=', $request->oficina_id], ['estado', '!=', 4]])
                 ->whereDate('fecha', '<=', Carbon::today()->toDateString())

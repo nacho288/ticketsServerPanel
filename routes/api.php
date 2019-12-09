@@ -27,6 +27,7 @@ Route::group(['middleware' => 'cors'], function () {
         Route::group(['middleware' => 'auth:api'], function () {
             Route::get('logout', 'AuthController@logout');
             Route::get('user', 'AuthController@user');
+            Route::post('reset', 'AuthController@reset');
 
             Route::apiResource('usuarios', 'UsuarioController');
             Route::apiResource('productos', 'ProductoController');
@@ -39,6 +40,8 @@ Route::group(['middleware' => 'cors'], function () {
             Route::apiResource('oficinas', 'OficinaController');
             Route::apiResource('movimientos', 'MovimientoController');
 
+
+            Route::get('/resumen', 'ProductoController@resumen');
             Route::post('/conectar', 'ConectarController@conectar');
             Route::get('/uproductos', 'ProductoUsuarioController@productos');
             Route::get('/test', 'TestController@test');

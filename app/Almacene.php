@@ -17,7 +17,7 @@ class Almacene extends Model
 
     public function administradores()
     {
-        return $this->belongsToMany(User::class);
+        return $this->belongsToMany(User::class)->orderBy('name');
     }
 
     public function productos()

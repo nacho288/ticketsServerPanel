@@ -21,15 +21,15 @@ class UsuarioController extends Controller
             $type = $request->query('type', 99);
 
             if ($type == '0') {
-                return User::where('type', 0)->get();
+                return User::where('type', 0)->orderBy('name')->get();
             }
 
             if ($type == '1') {
-                return User::where('type', 1)->get();
+                return User::where('type', 1)->orderBy('name')->get();
             }
 
             if ($type == '99') {
-                return User::all();
+                return User::orderBy('name')->get();
             }
         }
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Subcategoria;
 use Illuminate\Http\Request;
+use Exception;
 
 class SubcategoriaController extends Controller
 {
