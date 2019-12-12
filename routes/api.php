@@ -34,7 +34,7 @@ Route::group(['prefix' => 'auth'], function () {
         Route::apiResource('movimientos', 'MovimientoController');
 
 
-        Route::get('/resumen', 'ProductoController@resumen');
+        Route::post('/resumen', 'ProductoController@resumen');
         Route::post('/conectar', 'ConectarController@conectar');
         Route::get('/uproductos', 'ProductoUsuarioController@productos');
         Route::get('/test', 'TestController@test');
