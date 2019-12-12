@@ -13,43 +13,36 @@ use Illuminate\Http\Request;
 |
 */
 
-/* Route::middleware('auth:api')->get('/user', function (Request $request) {
-    return $request->user();
-});
- */
+Route::group(['prefix' => 'auth'], function () {
+    Route::post('login', 'AuthController@login');
+    Route::post('signup', 'AuthController@signup');
 
-Route::group(['middleware' => 'cors'], function () {
+    Route::group(['middleware' => 'auth:api'], function () {
+        Route::get('logout', 'AuthController@logout');
+        Route::get('user', 'AuthController@user');
+        Route::post('reset', 'AuthController@reset');
 
-    Route::group(['prefix' => 'auth'], function () {
-        Route::post('login', 'AuthController@login');
-        Route::post('signup', 'AuthController@signup');
-
-        Route::group(['middleware' => 'auth:api'], function () {
-            Route::get('logout', 'AuthController@logout');
-            Route::get('user', 'AuthController@user');
-            Route::post('reset', 'AuthController@reset');
-
-            Route::apiResource('usuarios', 'UsuarioController');
-            Route::apiResource('productos', 'ProductoController');
-            Route::apiResource('pedidos', 'PedidoController');
-            Route::apiResource('tratos', 'TratoController');
-            Route::apiResource('excepcionales', 'ExcepcionaleController');
-            Route::apiResource('categorias', 'CategoriaController');
-            Route::apiResource('subcategorias', 'SubcategoriaController');
-            Route::apiResource('almacenes', 'AlmaceneController');
-            Route::apiResource('oficinas', 'OficinaController');
-            Route::apiResource('movimientos', 'MovimientoController');
+        Route::apiResource('usuarios', 'UsuarioController');
+        Route::apiResource('productos', 'ProductoController');
+        Route::apiResource('pedidos', 'PedidoController');
+        Route::apiResource('tratos', 'TratoController');
+        Route::apiResource('excepcionales', 'ExcepcionaleController');
+        Route::apiResource('categorias', 'CategoriaController');
+        Route::apiResource('subcategorias', 'SubcategoriaController');
+        Route::apiResource('almacenes', 'AlmaceneController');
+        Route::apiResource('oficinas', 'OficinaController');
+        Route::apiResource('movimientos', 'MovimientoController');
 
 
-            Route::get('/resumen', 'ProductoController@resumen');
-            Route::post('/conectar', 'ConectarController@conectar');
-            Route::get('/uproductos', 'ProductoUsuarioController@productos');
-            Route::get('/test', 'TestController@test');
-            Route::get('/formatear', 'CodigoController@formatear');
-        });
+        Route::get('/resumen', 'ProductoController@resumen');
+        Route::post('/conectar', 'ConectarController@conectar');
+        Route::get('/uproductos', 'ProductoUsuarioController@productos');
+        Route::get('/test', 'TestController@test');
+        Route::get('/formatear', 'CodigoController@formatear');
     });
-
 });
+
+
 
 
 

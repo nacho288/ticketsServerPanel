@@ -38,6 +38,7 @@ class TratoController extends Controller
      */
     public function store(Request $request)
     {
+        error_log($request->oficina_id);
 
         if (
             $request->user()->type == 1 &&
