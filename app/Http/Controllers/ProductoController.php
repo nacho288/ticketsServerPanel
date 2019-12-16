@@ -56,7 +56,10 @@ class ProductoController extends Controller
 
                     if ($producto->stock != 0) {
                         $stockEnEspera = Producto::findOrFail($producto->id)
-                                ->pedidos->where('oficina_id', $request->oficina_id)
+                                ->pedidos()->where('oficina_id', $request->oficina_id)
+                                ->whereDate('fecha', '<=', Carbon::today()->toDateString())
+                                ->whereDate('fecha', '>', Carbon::today()->subDays($producto->frecuencia)->toDateString())
+                                ->get()
                                 ->where('estado', 1)
                                 ->sum('pivot.cantidad');
                         if (($producto->stock - $stockEnEspera) <= 0) {
@@ -86,7 +89,7 @@ class ProductoController extends Controller
                         ->where('pivot.estado', '!=', 2)
                         ->sum('pivot.cantidad');
 
-                    if ($producto->maximo != 0 && $producto->maximo > $cantidad_actual) {
+                    if ($producto->maximo != 0 && $producto->maximo > $cantidad_actual && $producto->stock != 0) {
                         array_push($respuesta, $producto);
                     }
                 }

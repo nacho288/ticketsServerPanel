@@ -24,11 +24,14 @@ class AuthController extends Controller
             'password' => bcrypt($request->password),
             'type' => $request->type,
         ]);
-        $user->save();
-        return response()->json([
-            'message' => 'Successfully created user!',
-            'error' => false
-        ], 201);
+
+        try {
+            $user->save();
+            return ["error" => false];
+        } catch (Exception $e) {
+            return ["error" => true];
+        }
+
     }
     public function login(Request $request)
     {
@@ -44,12 +47,6 @@ class AuthController extends Controller
             ]);
         }
         $user = $request->user();
-
-/*         if ($user->type == 0) {
-            return response()->json([
-                'error' => true
-            ]);
-        } */
 
         $tokenResult = $user->createToken('Personal Access Token');
         $token = $tokenResult->token;
@@ -70,9 +67,7 @@ class AuthController extends Controller
 
     public function reset(Request $request)
     {
-
-        if ($request->user()->type == 9 && $request->user()->id != $request->userMod_id) {
-          
+        if ($request->has('super') && $request->user()->type == 9 && $request->user()->id != $request->userMod_id ) {
             try {
                 $aModificar = User::where('id', $request->userMod_id)->first();
                 $aModificar->password = bcrypt($request->password);
@@ -81,7 +76,27 @@ class AuthController extends Controller
             } catch (Exception $e) {
                 return ["error" => true];
             }
+        }
 
+        try {
+
+            $credentials = ['username' => $request->user()->username, 'password' => $request->original];
+
+            if (!Auth::guard('web')->attempt($credentials, false, false)) {
+                return response()->json([
+                    'error' => true,
+                    'why' => $credentials
+                ]);
+            }
+
+            $request->user()->password = bcrypt($request->password);
+            $request->user()->save();
+            $request->user()->token()->revoke();
+
+            return ["error" => false];
+
+        } catch (Exception $e) {
+            return ["error" => true];
         }
 
         return ["error" => true];
